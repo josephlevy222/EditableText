@@ -31,7 +31,7 @@ public struct EditableText: View {
 		@State var fixed = false
 		var body: some View {
 			VStack {
-				EditableText(text: $text)
+				EditableText($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
 					.border(Color.green.opacity(0.5))
 				Toggle(isOn: $fixed) {  Text("Fixed") }.fixedSize()
