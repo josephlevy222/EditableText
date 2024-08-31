@@ -14,7 +14,7 @@ extension RichTextView {
 		if action.description.contains("_share")
 			|| action.description.contains("_translate")
 			|| action.description.contains("_define")
-			//|| action.description.contains("_showTextStyleOptions") // BIU
+			|| action.description.contains("_showTextStyleOptions") // BIU
 			{ return false }
 		return super.canPerformAction(action, withSender: sender)
 	}
@@ -22,7 +22,7 @@ extension RichTextView {
 	open override func buildMenu(with builder: UIMenuBuilder) {
 		builder.remove(menu: .lookup)
 		builder.remove(menu: .share)
-		//builder.remove(menu: .textStyle)
+		builder.remove(menu: .textStyle)
 		super.buildMenu(with: builder)
 	}
 	

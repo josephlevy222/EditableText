@@ -1,5 +1,5 @@
-# RichTextEditor
-RichTextEditor is yet another SwiftUI attributed string text editor based on UITextView.
+# EditableText
+EditableText is a SwiftUI AttributedString text editor based on UITextView with good translation from SwiftUI fonts to UIFonts
 
 Unlike other incarnations of this type this version takes a binding to a Swift value type AttributedString rather than the reference type NSAttributedString. The font attributes of the AttributedString are translated from SwiftUI Font types to UIKit UIFont types using the routines found in FontToUIFont.swift. Which is not always perfect but serves this application well.
 
@@ -20,7 +20,7 @@ A toolbar for iOS/iPadOS is attached to the keyboard using the UITextView's inpu
 				Text(text)
 				Rectangle().frame(height: 5)
 					HStack {
-						RichTextEditor($text)
+						EditableText($text)
 						Spacer()
 					}
 				}
@@ -35,4 +35,4 @@ The toolbar still needs to be setup to work in macCatalyst and the macOS Fonts w
 
 ## License
 
-RichTextEditor is available under the MIT license. See the LICENSE file for more info.
+EditableText is available under the MIT license. See the LICENSE file for more info.

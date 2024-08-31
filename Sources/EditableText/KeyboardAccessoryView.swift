@@ -493,8 +493,8 @@ public class InputClickPlayer {
 	private var soundID: SystemSoundID
 	init() {
 		soundID = 0
-		if let filePath = Bundle.main.path(forResource: "sound56", ofType: "wav") {
-						//Bundle.module.path(forResource: "sound56", ofType: "wav") {
+		if let filePath = //Bundle.main.path(forResource: "sound56", ofType: "wav") {
+						Bundle.module.path(forResource: "sound56", ofType: "wav") {
 			let fileURL = URL(fileURLWithPath: filePath)
 			AudioServicesCreateSystemSoundID(fileURL as CFURL, &soundID)
 		} else { debugPrint("Error getting button click file sound56.wav") }
@@ -719,7 +719,7 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		}
 		self.parent.alignment = textView.textAlignment.textAlignment
 		DispatchQueue.main.async {
-			guard let toolbar = richTextView?.toolbar else {  return }
+			guard let toolbar = richTextView?.toolbar else { return }
 			
 			toolbar.wrappedValue.fontSize = fontTraits.fontSize
 			toolbar.wrappedValue.isBold = fontTraits.isBold
@@ -736,27 +736,11 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		}
 	}
 	func textViewDidEndEditing(_ textView: UITextView) {
-//		if textView.attributedText.string == "" || textView.attributedText.string == parent.placeholder {
-//			textView.attributedText = NSAttributedString(string: parent.placeholder)
-//		} else {
-//			parent.onCommit(textView.attributedText)
-//		}
 		UITextView.appearance().tintColor = .tintColor
 		self.parent.alignment = textView.textAlignment.textAlignment
 	}
 
 	func textViewDidBeginEditing(_ textView: UITextView) {
-//		if textView.attributedText.string == parent.placeholder {
-//			textView.attributedText = NSAttributedString(string: "")
-//			textView.typingAttributes[.foregroundColor] = UIColor.label
-//		}
-//		textView.undoManager?.registerUndo(withTarget: self, handler: { targetSelf in
-//			print("Doing undo")
-//		})
-//
-//		let selectedRange = textView.selectedRange
-//		textView.selectedRange = NSRange()
-//		textView.selectedRange = selectedRange
 		textView.textAlignment = switch self.parent.alignment {
 		case .leading: .left
 		case .center: .center

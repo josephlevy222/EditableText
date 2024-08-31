@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "EditableText",
+	platforms: [.iOS("15.5"),.macOS(.v12)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
@@ -13,11 +14,14 @@ let package = Package(
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "EditableText"),
-        .testTarget(
-            name: "EditableTextTests",
-            dependencies: ["EditableText"]),
-    ]
+		// Targets can depend on other targets in this package and products from dependencies.
+		.target(
+			name: "EditableText",
+			resources: [
+				.process("sound56.wav")]
+		),
+		.testTarget(
+			name: "EditableTextTests",
+			dependencies: ["EditableText"]),
+	]
 )
