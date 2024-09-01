@@ -7,12 +7,15 @@
 
 import SwiftUI
 
-public struct EditableText: View {
+struct EditableText: View {
 	@Binding public var text: AttributedString
 	@FocusState private var focus : Bool
-	@State private var alignment: TextAlignment = .center // can have more global UITextView paramters
-	public init(_ text: Binding<AttributedString>) { _text = text }
-	public var body: some View {
+	@State private var alignment: TextAlignment  // can have more global UITextView paramters
+	public init(_ text: Binding<AttributedString>, alignment: TextAlignment = .center) {
+		_text = text
+		_alignment = State(initialValue: alignment)
+	}
+	var body: some View {
 		Text(text)
 			.multilineTextAlignment(alignment)
 			.opacity(focus ? 0 : 1)
