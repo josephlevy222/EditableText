@@ -28,6 +28,41 @@ public struct EditableText: View {
 	}
 }
 
+public struct EditableTextInPopover: View {
+	@Binding public var text: AttributedString
+	@State private var alignment: TextAlignment  // can have more global UITextView paramters
+	public init(_ text: Binding<AttributedString>, alignment: TextAlignment = .center) {
+		_text = text
+		_alignment = State(initialValue: alignment)
+	}
+	@State private var edit = false
+	public var body: some View {
+		Text(text)
+			.multilineTextAlignment(alignment)
+			.onTapGesture { edit = true }
+			.popover(isPresented: $edit) {
+				popView(text: $text, alignment: $alignment)
+			}
+	}
+	
+	struct popView: View {
+		@Binding var text: AttributedString
+		@Binding var alignment :TextAlignment
+		@FocusState private var focus: Bool
+		
+		var body: some View {
+			Text(text)
+				.multilineTextAlignment(alignment)
+				.onAppear { focus = true }
+				.opacity(0)
+				.background {
+					RichTextEditor(attributedText: $text, alignment: $alignment)
+						.focused($focus)
+				}
+		}
+	}
+}
+
 #Preview {
 	struct Preview: View {
 		@State var text = AttributedString("Type here...")
@@ -35,6 +70,9 @@ public struct EditableText: View {
 		var body: some View {
 			VStack {
 				EditableText($text)
+					.fixedSize(horizontal: fixed, vertical: fixed)
+					.border(Color.green.opacity(0.5))
+				EditableTextInPopover($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
 					.border(Color.green.opacity(0.5))
 				Toggle(isOn: $fixed) {  Text("Fixed") }.fixedSize()
