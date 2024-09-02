@@ -7,9 +7,17 @@
 import SwiftUI
 
 struct RichTextEditor: UIViewRepresentable {
+	public init(attributedText: Binding<AttributedString>, alignment: Binding<TextAlignment>,
+				  configuration: @escaping (UITextView) -> () = { _ in }) {
+		_attributedText = attributedText
+		_alignment = alignment
+		configure = configuration
+	}
 	@Binding var attributedText: AttributedString
 	@Binding var alignment: TextAlignment
 	@State private var toolbar = KeyboardToolbar(textView: RichTextView())
+	public var configure = { (view: UITextView) in }
+	
 	var textView: RichTextView { toolbar.textView } // created with toolbar above
 	
 	func makeUIView(context: Context) -> UITextView {
@@ -32,13 +40,14 @@ struct RichTextEditor: UIViewRepresentable {
 				accessoryView.frame = frameSize }
 			return accessoryView
 		}()
-		
+		configure(textView)
 		return textView
 	}
 	
 	func updateUIView(_ uiView: UITextView, context: Context) {
 		uiView.textStorage.setAttributedString(attributedText.nsAttributedString())
 		uiView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
+		configure(uiView)
 		print("update UITextView")
 	}
 	

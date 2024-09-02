@@ -28,6 +28,60 @@ public struct EditableText: View {
 	}
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public struct EditableTextInPopover: View {
 	@Binding public var text: AttributedString
 	@State private var alignment: TextAlignment  // can have more global UITextView paramters
@@ -36,28 +90,45 @@ public struct EditableTextInPopover: View {
 		_alignment = State(initialValue: alignment)
 	}
 	@State private var edit = false
+	@State private var latchEdit = false
+	@FocusState private var focus : Bool
+	@State var keyboardShown : Bool = false
 	public var body: some View {
-		Text(text)
-			.multilineTextAlignment(alignment)
-			.onTapGesture { edit = true }
-			.popover(isPresented: $edit) {
-				popView(text: $text, alignment: $alignment)
+		ZStack {
+			EditableText(.constant(AttributedString())).focused($focus)
+			Text(text)
+				.multilineTextAlignment(alignment)
+				.popover(isPresented: $edit) {
+					popView(text: $text, alignment: $alignment)
+				}
+		}.onTapGesture { print("tapped"); latchEdit = true
+			if focus { edit = true; latchEdit = false } else { focus = true }
+		}.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
+			keyboardShown = shows
+		}.onChange(of: keyboardShown) { 
+			if $0 {
+				edit = latchEdit; latchEdit = false
+			} else {
+				focus = false; edit = false
 			}
+		}
 	}
 	
 	struct popView: View {
 		@Binding var text: AttributedString
 		@Binding var alignment :TextAlignment
-		@FocusState private var focus: Bool
-		
+		//@FocusState private var focus: Bool
+		@Environment(\.dismiss) var dismiss
 		var body: some View {
 			Text(text)
 				.multilineTextAlignment(alignment)
-				.onAppear { focus = true }
 				.opacity(0)
-				.background {
-					RichTextEditor(attributedText: $text, alignment: $alignment)
-						.focused($focus)
+				.overlay {
+					RichTextEditor(attributedText: $text, alignment: $alignment) {
+						$0.becomeFirstResponder()
+					}
+					
+						//.focused($focus).onChange(of: focus) { if !$0 {dismiss()}}
 				}
 		}
 	}
