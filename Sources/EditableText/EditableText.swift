@@ -101,15 +101,16 @@ public struct EditableTextInPopover: View {
 				.popover(isPresented: $edit) {
 					popView(text: $text, alignment: $alignment)
 				}
-		}.onTapGesture { print("tapped"); latchEdit = true
-			if focus { edit = true; latchEdit = false } else { focus = true }
+		}.onTapGesture { print("tapped"); 
+			if keyboardShown { edit = true; latchEdit = false }
+			if focus { edit = true; latchEdit = false } else { focus = true; latchEdit = true }
 		}.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
 			keyboardShown = shows
-		}.onChange(of: keyboardShown) { 
-			if $0 {
-				edit = latchEdit; latchEdit = false
+		}.onChange(of: keyboardShown) { shows in
+			if shows {
+				edit = latchEdit; latchEdit = false;
 			} else {
-				focus = false; edit = false
+				focus = false; edit = false;
 			}
 		}
 	}
@@ -117,18 +118,14 @@ public struct EditableTextInPopover: View {
 	struct popView: View {
 		@Binding var text: AttributedString
 		@Binding var alignment :TextAlignment
-		//@FocusState private var focus: Bool
-		@Environment(\.dismiss) var dismiss
 		var body: some View {
 			Text(text)
 				.multilineTextAlignment(alignment)
 				.opacity(0)
 				.overlay {
 					RichTextEditor(attributedText: $text, alignment: $alignment) {
-						$0.becomeFirstResponder()
+						$0.becomeFirstResponder()//whenever updated
 					}
-					
-						//.focused($focus).onChange(of: focus) { if !$0 {dismiss()}}
 				}
 		}
 	}
