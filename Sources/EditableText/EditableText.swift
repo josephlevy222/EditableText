@@ -89,10 +89,11 @@ public struct EditableTextInPopover: View {
 		_text = text
 		_alignment = State(initialValue: alignment)
 	}
+	
 	@State private var edit = false
-	@State private var latchEdit = false
 	@FocusState private var focus : Bool
-	@State var keyboardShown : Bool = false
+	@State private var keyboardShown : Bool = false
+	
 	public var body: some View {
 		ZStack {
 			EditableText(.constant(AttributedString())).focused($focus)
@@ -101,17 +102,17 @@ public struct EditableTextInPopover: View {
 				.popover(isPresented: $edit) {
 					popView(text: $text, alignment: $alignment)
 				}
-		}.onTapGesture { print("tapped"); 
-			if keyboardShown { edit = true; latchEdit = false }
-			if focus { edit = true; latchEdit = false } else { focus = true; latchEdit = true }
-		}.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
-			keyboardShown = shows
-		}.onChange(of: keyboardShown) { shows in
-			if shows {
-				edit = latchEdit; latchEdit = false;
-			} else {
-				focus = false; edit = false;
+		}.onTapGesture {
+			focus = true
+			edit = keyboardShown
+			if !keyboardShown {
+				DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+					edit = true // After 1.2 seconds the keyboard shows
+				}
 			}
+		}.onReceive(keyboardPublisher) {
+			keyboardShown = $0
+			if !$0 { edit = false }
 		}
 	}
 	
@@ -124,7 +125,7 @@ public struct EditableTextInPopover: View {
 				.opacity(0)
 				.overlay {
 					RichTextEditor(attributedText: $text, alignment: $alignment) {
-						$0.becomeFirstResponder()//whenever updated
+						$0.becomeFirstResponder()//whenever updated or created
 					}
 				}
 		}
