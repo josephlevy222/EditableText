@@ -23,7 +23,7 @@ extension View {
 					.default
 					.publisher(for: UIResponder.keyboardWillHideNotification)
 					.map { _ in false })
-			.debounce(for: .seconds(0.1), scheduler: RunLoop.main)
+			.debounce(for: .seconds(0.25), scheduler: RunLoop.main)
 			.eraseToAnyPublisher()
 	}
 }
