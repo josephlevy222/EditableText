@@ -9,7 +9,7 @@ import SwiftUI
 
 public struct EditableText: View {
 	@Binding public var text: AttributedString
-	@FocusState private var focus : Bool
+	@FocusState private var focus : Bool //= false
 	@State private var alignment: TextAlignment  // can have more global UITextView paramters
 	public init(_ text: Binding<AttributedString>, alignment: TextAlignment = .center) {
 		_text = text
@@ -21,7 +21,9 @@ public struct EditableText: View {
 			.opacity(focus ? 0 : 1)
 			.onTapGesture { focus = true }
 			.overlay {
-				RichTextEditor(attributedText: $text, alignment: $alignment)
+				RichTextEditor(attributedText: $text, alignment: $alignment)  {
+					if focus { $0.becomeFirstResponder()}
+				}
 					.focused($focus)
 					.opacity(focus ? 1 : 0)
 			}
@@ -89,49 +91,45 @@ public struct EditableTextInPopover: View {
 		_text = text
 		_alignment = State(initialValue: alignment)
 	}
-	//@State private var latchEdit = false
 	@State private var edit = false
 	@FocusState private var focus : Bool
 	@State private var keyboardShown : Bool = false
 	
 	public var body: some View {
 		ZStack {
-			EditableText(.constant(AttributedString())).focused($focus)
-			Text(text)
-				.multilineTextAlignment(alignment)
+			EditableText($text).focused($focus)
 				.popover(isPresented: $edit) {
 					popView(text: $text, alignment: $alignment)
 				}
+				.onTapGesture {
+					if focus { edit = true }
+				}
 		}.onTapGesture {
-			if keyboardShown { edit = true; }// latchEdit = false }
-			if focus { edit = true; /*latchEdit = false*/ } else { focus = true; }//latchEdit = true }
+			if keyboardShown { edit = true }
+			else { focus = true }
+		}.onChange(of: focus) {
+			if $0 {
+				DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+					edit = true // After 0.5 seconds the keyboard shows I hope
+				}
+			}
 		}.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
 			keyboardShown = shows
-			if !shows { edit = false }
-		}.onChange(of: keyboardShown) { shows in
-			if shows {
-				edit = focus //latchEdit; latchEdit = false;
-			}
+			if !keyboardShown { edit = false }
 		}
-//			focus = true
-//			edit = keyboardShown
-//			if !keyboardShown {
-//				DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-//					edit = true // After 1.2 seconds the keyboard shows
-//				}
-//			}
 	}
 	
 	struct popView: View {
 		@Binding var text: AttributedString
 		@Binding var alignment :TextAlignment
+		//var focus: Bool
 		var body: some View {
 			Text(text)
 				.multilineTextAlignment(alignment)
 				.opacity(0)
 				.overlay {
 					RichTextEditor(attributedText: $text, alignment: $alignment) {
-						$0.becomeFirstResponder() //when created or updated
+						 $0.becomeFirstResponder() //when created or updated
 					}
 				}
 		}
