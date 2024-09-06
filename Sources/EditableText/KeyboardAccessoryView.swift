@@ -541,9 +541,10 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		let rangesAttributes = selectedRangeAttributes
 		for (range, attributes) in rangesAttributes {
 			font = attributes[.font] as? UIFont ?? defaultFont
+			let offset = attributes[.baselineOffset] as? CGFloat ?? 0.0
 			let weight = font.fontDescriptor.symbolicTraits.intersection(.traitBold) == .traitBold ? .bold : font.fontDescriptor.weight
-			let size = font.fontDescriptor.pointSize
-			let fontSize = size + CGFloat(isIncrease ? (size < maxFontSize ? 1 : 0) : (size > minFontSize ? -1 : 0))
+			let size = font.fontDescriptor.pointSize / (offset == 0.0 ? 1.0 : 0.75)
+			let fontSize = (size + CGFloat(isIncrease ? (size < maxFontSize ? 1 : 0) : (size > minFontSize ? -1 : 0)))*(offset == 0.0 ? 1.0 : 0.75)
 			font = UIFont(descriptor: font.fontDescriptor, size: fontSize).withWeight(weight)
 			textEffect(range: range, key: .font, value: font, defaultValue: defaultFont)
 		}
@@ -653,28 +654,24 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		let fontTraits: (isBold: Bool,isItalic: Bool,fontSize: CGFloat, offset: CGFloat) = {
 			let offset = attributes[.baselineOffset] as? CGFloat ?? 0.0
 			var pointSize: CGFloat = UIFont.preferredFont(forTextStyle: .body).pointSize // default value
-			let uiFont = (attributes[.font] as? UIFont)//?.fontDescriptor.symbolicTraits
-			let bold = uiFont?.contains(trait: .traitBold) ?? false
-			let italic = uiFont?.contains(trait: .traitItalic) ?? false
+			var uiFont = (attributes[.font] as? UIFont) ?? UIFont.preferredFont(forTextStyle: .body)
+			let bold = uiFont.contains(trait: .traitBold)
+			let italic = uiFont.contains(trait: .traitItalic)
 			
 			if let toolbar = richTextView?.toolbar {
 				if toolbar.wrappedValue.justChanged {
 					pointSize = toolbar.wrappedValue.fontSize
 					return ( bold, italic, pointSize, offset)
 				} else {
-					if let uiFont {
-						pointSize = uiFont.pointSize / (offset == 0.0 ? 1.0 : 0.75)
-						// pointSize is the fontSize that the toolbar ought to use unless justChanged
-						return (uiFont.contains(trait: .traitBold),uiFont.contains(trait: .traitItalic), pointSize, offset)
+					let rangeAttributes = self.selectedRangeAttributes
+					for (_, attributes) in rangeAttributes {
+						uiFont = attributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .body)
+						let offset = attributes[.baselineOffset] as? CGFloat ?? 0.0
+						let size = uiFont.fontDescriptor.pointSize / (offset == 0.0 ? 1.0 : 0.75)
+						pointSize = max(size, pointSize)
 					}
-				} // get here only if not justChanged and not uiFont
-				// Try to convert Font to UIFont
-				if let font = attributes[.font] as? Font { print("Font found.")// { was ,
-					let uiFont = font.uiFont() ?? UIFont.preferredFont(forTextStyle: .body)
-					pointSize = uiFont.pointSize / (offset == 0.0 ? 1.0 : 0.75)
-					let bold = uiFont.contains(trait: .traitBold); print("bold from Font: \(bold)")
 					// pointSize is the fontSize that the toolbar ought to use unless justChanged
-					return (bold,uiFont.contains(trait: .traitItalic), pointSize, offset)
+					return (uiFont.contains(trait: .traitBold),uiFont.contains(trait: .traitItalic), pointSize, offset)
 				} // Failed to Convert use .body
 			}
 			return ( false, false, pointSize, offset)

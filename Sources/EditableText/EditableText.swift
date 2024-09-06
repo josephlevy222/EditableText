@@ -147,6 +147,7 @@ public struct EditableTextInPopover: View {
 				EditableText($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
 					.border(Color.green.opacity(0.5))
+				Spacer()
 				EditableTextInPopover($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
 					.border(Color.green.opacity(0.5))
@@ -157,6 +158,7 @@ public struct EditableTextInPopover: View {
 									to: nil, from: nil, for: nil)
 				}
 				Button("Reset") { text = AttributedString("Reset of Type here...") }
+				Spacer()
 			}
 		}
 	}
