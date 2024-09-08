@@ -93,7 +93,7 @@ public struct EditableTextInPopover: View {
 	@FocusState private var focus : Bool
 	@FocusState private var popFocus : Bool
 	@State private var keyboardShown : Bool = false
-	
+	@Environment(\.dismiss) private var dismiss
 	public var body: some View {
 		Text(text)
 			.multilineTextAlignment(alignment)
@@ -117,9 +117,9 @@ public struct EditableTextInPopover: View {
 					}
 			}
 			.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
-				if !shows { keyboardShown = false }
-				else { // Wait long enough for keyboard to have repositioned everything
-					DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { keyboardShown = true }
+				DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+					// Wait long enough for keyboard to have repositioned everything
+					keyboardShown = shows
 				}
 			}.onChange(of: keyboardShown) {
 				if $0 { if  focus { edit = true } }
