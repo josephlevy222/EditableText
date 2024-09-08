@@ -21,9 +21,7 @@ public struct EditableText: View {
 			.opacity(focus ? 0 : 1)
 			.onTapGesture { focus = true }
 			.overlay {
-				RichTextEditor(attributedText: $text, alignment: $alignment)  {
-					if focus { $0.becomeFirstResponder()}
-				}
+				RichTextEditor(attributedText: $text, alignment: $alignment)
 					.focused($focus)
 					.opacity(focus ? 1 : 0)
 			}
@@ -93,46 +91,40 @@ public struct EditableTextInPopover: View {
 	}
 	@State private var edit = false
 	@FocusState private var focus : Bool
+	@FocusState private var popFocus : Bool
 	@State private var keyboardShown : Bool = false
 	
 	public var body: some View {
-		ZStack {
-			EditableText($text).focused($focus)
-				.popover(isPresented: $edit) {
-					popView(text: $text, alignment: $alignment)
-				}
-				.onTapGesture {
-					if focus { edit = true }
-				}
-		}.onTapGesture {
-			if keyboardShown { edit = true }
-			else { focus = true }
-		}.onChange(of: focus) {
-			if $0 {
-				DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-					edit = true // After 0.5 seconds the keyboard shows I hope
-				}
+		Text(text)
+			.multilineTextAlignment(alignment)
+			.onTapGesture {
+				if keyboardShown { edit = true }
+				else { focus = true }
 			}
-		}.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
-			keyboardShown = shows
-			if !keyboardShown { edit = false }
-		}
-	}
-	
-	struct popView: View {
-		@Binding var text: AttributedString
-		@Binding var alignment :TextAlignment
-		//var focus: Bool
-		var body: some View {
-			Text(text)
-				.multilineTextAlignment(alignment)
-				.opacity(0)
-				.overlay {
-					RichTextEditor(attributedText: $text, alignment: $alignment) {
-						 $0.becomeFirstResponder() //when created or updated
+			.background {
+				RichTextEditor(attributedText: $text, alignment: $alignment)
+					.focused($focus)
+					.opacity(0)
+			}
+			.popover(isPresented: $edit) {
+				Text(text)
+					.multilineTextAlignment(alignment)
+					.opacity(0)
+					.overlay {
+						RichTextEditor(attributedText: $text, alignment: $alignment) {
+							if keyboardShown { $0.becomeFirstResponder() }
+						}
 					}
+			}
+			.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
+				if !shows { keyboardShown = false }
+				else { // Wait long enough for keyboard to have repositioned everything
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { keyboardShown = true }
 				}
-		}
+			}.onChange(of: keyboardShown) {
+				if $0 { if  focus { edit = true } }
+				else { edit = false  }
+			}
 	}
 }
 

@@ -17,7 +17,7 @@ extension View {
 			.Merge(
 				NotificationCenter
 					.default
-					.publisher(for: UIResponder.keyboardWillShowNotification)
+					.publisher(for: UIResponder.keyboardDidShowNotification)
 					.map { _ in true },
 				NotificationCenter
 					.default
