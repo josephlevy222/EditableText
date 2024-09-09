@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-struct RichTextEditor: UIViewRepresentable {
+public struct RichTextEditor: UIViewRepresentable {
 	public init(attributedText: Binding<AttributedString>, alignment: Binding<TextAlignment>,
 				  configuration: @escaping (UITextView) -> () = { _ in }) {
 		_attributedText = attributedText
@@ -20,7 +20,7 @@ struct RichTextEditor: UIViewRepresentable {
 	
 	var textView: RichTextView { toolbar.textView } // created with toolbar above
 	
-	func makeUIView(context: Context) -> UITextView {
+	public func makeUIView(context: Context) -> UITextView {
 		textView.accessoryView = KeyboardAccessoryView(toolbar: $toolbar)
 		textView.textContainerInset = UIEdgeInsets.zero
 		textView.textContainer.lineFragmentPadding = 0
@@ -44,25 +44,25 @@ struct RichTextEditor: UIViewRepresentable {
 		return textView
 	}
 	
-	func updateUIView(_ uiView: UITextView, context: Context) {
+	public func updateUIView(_ uiView: UITextView, context: Context) {
 		uiView.textStorage.setAttributedString(attributedText.nsAttributedString())
 		uiView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 		configure(uiView)
 		print("update UITextView")
 	}
 	
-	func makeCoordinator() -> Coordinator {
+	public func makeCoordinator() -> Coordinator {
 		Coordinator(self)
 	}
 	
-	class Coordinator: NSObject, UITextViewDelegate {
+	public class Coordinator: NSObject, UITextViewDelegate {
 		var parent: RichTextEditor
 		
 		init(_ parent: RichTextEditor) {
 			self.parent = parent
 		}
 		
-		func textViewDidChange(_ textView: UITextView) {
+		public func textViewDidChange(_ textView: UITextView) {
 //			if textView.attributedText.string != parent.placeholder {
 				parent.attributedText =  textView.attributedText.attributedStringFromUIKit
 //			}

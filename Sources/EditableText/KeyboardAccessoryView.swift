@@ -505,7 +505,7 @@ public class InputClickPlayer {
 
 extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 	// MARK: - Image Picker
-	func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+	public func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
 		if let img = info[UIImagePickerController.InfoKey.editedImage] as? UIImage, var image = img.roundedImageWithBorder(color: .secondarySystemBackground) {
 			//textViewDidBeginEditing(parent.textView)
 			let newString = NSMutableAttributedString(attributedString: parent.textView.attributedText)
@@ -532,24 +532,6 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 	}
 	
 	// MARK: - Text Editor Delegate
-	
-	func adjustFontSize(isIncrease: Bool) {
-		var font: UIFont
-		let defaultFont = UIFont.preferredFont(forTextStyle: .body)
-		let maxFontSize: CGFloat = 80
-		let minFontSize: CGFloat = 8
-		let rangesAttributes = selectedRangeAttributes
-		for (range, attributes) in rangesAttributes {
-			font = attributes[.font] as? UIFont ?? defaultFont
-			let offset = attributes[.baselineOffset] as? CGFloat ?? 0.0
-			let weight = font.fontDescriptor.symbolicTraits.intersection(.traitBold) == .traitBold ? .bold : font.fontDescriptor.weight
-			let size = font.fontDescriptor.pointSize / (offset == 0.0 ? 1.0 : 0.75)
-			let fontSize = (size + CGFloat(isIncrease ? (size < maxFontSize ? 1 : 0) : (size > minFontSize ? -1 : 0)))*(offset == 0.0 ? 1.0 : 0.75)
-			font = UIFont(descriptor: font.fontDescriptor, size: fontSize).withWeight(weight)
-			textEffect(range: range, key: .font, value: font, defaultValue: defaultFont)
-		}
-	}
-	
 	/// Not used yet?
 	func textFont(name: String) {
 		let attributes = parent.textView.selectedRange.isEmpty ? parent.textView.typingAttributes : selectedAttributes
@@ -646,7 +628,7 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 	}
 	
 	// MARK: - Text View Delegate
-	func textViewDidChangeSelection(_ textView: UITextView) {
+	public func textViewDidChangeSelection(_ textView: UITextView) {
 		print("textViewDidChangeSelection")
 		let attributes = selectedAttributes
 		let richTextView = textView as? RichTextView
@@ -732,12 +714,12 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 			toolbar.wrappedValue.textAlignment = textView.textAlignment
 		}
 	}
-	func textViewDidEndEditing(_ textView: UITextView) {
+	public func textViewDidEndEditing(_ textView: UITextView) {
 		UITextView.appearance().tintColor = .tintColor
 		self.parent.alignment = textView.textAlignment.textAlignment
 	}
 
-	func textViewDidBeginEditing(_ textView: UITextView) {
+	public func textViewDidBeginEditing(_ textView: UITextView) {
 		textView.textAlignment = switch self.parent.alignment {
 		case .leading: .left
 		case .center: .center
