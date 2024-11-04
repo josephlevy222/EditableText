@@ -98,8 +98,10 @@ public struct EditableTextInPopover: View {
 		Text(text)
 			.multilineTextAlignment(alignment)
 			.onTapGesture {
-				if keyboardShown { edit = true }
-				else { focus = true }
+				withAnimation {
+					if keyboardShown { edit = true }
+					else { focus = true }
+				}
 			}
 			.background {
 				RichTextEditor(attributedText: $text, alignment: $alignment)
@@ -117,7 +119,7 @@ public struct EditableTextInPopover: View {
 					}
 			}
 			.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
-				DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+				DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
 					// Wait long enough for keyboard to have repositioned everything
 					keyboardShown = shows
 				}
@@ -136,11 +138,12 @@ public struct EditableTextInPopover: View {
 			VStack {
 				EditableText($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
-					.border(Color.green.opacity(0.5))
+					//.border(Color.green.opacity(0.5))
+					.debugFrame()
 				Spacer()
 				EditableTextInPopover($text)
 					.fixedSize(horizontal: fixed, vertical: fixed)
-					.border(Color.green.opacity(0.5))
+					.debugFrame()//.border(Color.green.opacity(0.5))
 				Toggle(isOn: $fixed) {  Text("Fixed") }.fixedSize()
 				Button("Done") {
 					UIApplication.shared
