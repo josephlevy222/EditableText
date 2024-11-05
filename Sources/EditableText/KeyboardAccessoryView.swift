@@ -613,7 +613,6 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 			}
 		}
 		parent.textView.selectedRange = textRange
-		print("test for font")
 		return textAttributes
 	}
 	
@@ -629,7 +628,7 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 	
 	// MARK: - Text View Delegate
 	public func textViewDidChangeSelection(_ textView: UITextView) {
-		print("textViewDidChangeSelection")
+		//print("textViewDidChangeSelection")
 		let attributes = selectedAttributes
 		let richTextView = textView as? RichTextView
 		
