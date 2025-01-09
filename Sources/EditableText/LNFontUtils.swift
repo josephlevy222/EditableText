@@ -103,7 +103,7 @@ public extension UIFont.TextStyle {
 
 public extension SwiftUI.Font {
 	func uiFont(with traitCollection: UITraitCollection = .current) -> UIFont? {
-		guard let base = Mirror(reflecting: self).descendant("provider", "base") else { return nil }
+		guard let base = Mirror(reflecting: self).descendant("provider", "base") else { print("Did not convert"); return nil }
 		return SwiftUI.Font.UIFontProvider(from: base, with: traitCollection)?.uiFont
 	}
 }
