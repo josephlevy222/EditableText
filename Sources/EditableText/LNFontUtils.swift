@@ -271,13 +271,14 @@ public extension AttributeContainer {
 }
 
 extension AttributedString {
-	public func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
+	public mutating func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
 		let nsAttributedString = NSMutableAttributedString()
 		for run in runs {
 			let attributes = run.attributes.swiftUIToUIKit()
 			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
 			nsAttributedString.append(nsText)
 		}
+		self = AttributedString(nsAttributedString)
 		return nsAttributedString
 	}
 
