@@ -233,9 +233,9 @@ extension NSAttributedString {
 public extension AttributeContainer {
 	func swiftUIToUIKit(with traitCollection: UITraitCollection = .current) -> AttributeContainer {
 		var rv = self
-		if let font = rv.swiftUI.font, rv.uiKit.font == nil { print(".",terminator: "")
+		if let font = rv.swiftUI.font { if rv.uiKit.font == nil { print(".",terminator: "")
 			rv.uiKit.font = font.uiFont(with: traitCollection)
-		}
+		}}
 		if rv.uiKit.font == nil {
 			rv.uiKit.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
 		}
@@ -271,13 +271,14 @@ public extension AttributeContainer {
 }
 
 extension AttributedString {
-	public  func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
+	public mutating func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
 		let nsAttributedString = NSMutableAttributedString()
 		for run in runs {
 			let attributes = run.attributes.swiftUIToUIKit()
 			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
 			nsAttributedString.append(nsText)
 		}
+		self = (try? AttributedString(nsAttributedString, including: \.uiKit)) ?? AttributedString(nsAttributedString)
 		return nsAttributedString
 	}
 

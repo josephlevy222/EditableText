@@ -10,7 +10,6 @@ public struct RichTextEditor: UIViewRepresentable {
 	public init(attributedText: Binding<AttributedString>, alignment: Binding<TextAlignment>,
 				  configuration: @escaping (UITextView) -> () = { _ in }) {
 		_attributedText = attributedText
-		attributedText.wrappedValue = attributedText.wrappedValue.nsAttributedString().attributedStringFromUIKit
 		_alignment = alignment
 		configure = configuration
 	}
