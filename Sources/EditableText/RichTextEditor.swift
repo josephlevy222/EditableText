@@ -10,6 +10,7 @@ public struct RichTextEditor: UIViewRepresentable {
 	public init(attributedText: Binding<AttributedString>, alignment: Binding<TextAlignment>,
 				  configuration: @escaping (UITextView) -> () = { _ in }) {
 		_attributedText = attributedText
+		attributedText.wrappedValue = attributedText.wrappedValue.nsAttributedString().attributedStringFromUIKit
 		_alignment = alignment
 		configure = configuration
 	}
@@ -47,7 +48,7 @@ public struct RichTextEditor: UIViewRepresentable {
 	public func updateUIView(_ uiView: UITextView, context: Context) {
 		uiView.textStorage.setAttributedString(attributedText.nsAttributedString())
 		uiView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
-		//print("update UITextView")
+		//debugPrint("update UITextView")
 	}
 	
 	public func makeCoordinator() -> Coordinator {
