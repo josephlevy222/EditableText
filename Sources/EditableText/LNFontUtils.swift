@@ -233,10 +233,11 @@ extension NSAttributedString {
 public extension AttributeContainer {
 	func swiftUIToUIKit(with traitCollection: UITraitCollection = .current) -> AttributeContainer {
 		var rv = self
-		if let font = rv.swiftUI.font { if rv.uiKit.font == nil { print(".",terminator: "")
+		if let font = rv.swiftUI.font, rv.uiKit.font == nil { print(".",terminator: "")
 			rv.uiKit.font = font.uiFont(with: traitCollection)
-		}}
-		if rv.uiKit.font == nil {
+			rv.swiftUI.font = nil
+		}
+		if rv.uiKit.font == nil { print("Using .body as default font")
 			rv.uiKit.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
 		}
 		if let foregroundColor = rv.swiftUI.foregroundColor {
