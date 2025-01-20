@@ -237,7 +237,7 @@ public extension AttributeContainer {
 			rv.uiKit.font = font.uiFont(with: traitCollection)
 			rv.swiftUI.font = nil
 		}
-		if rv.uiKit.font == nil { print("Using .body as default font")
+		if rv.uiKit.font == nil { print("b",terminator: "")
 			rv.uiKit.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
 		}
 		if let foregroundColor = rv.swiftUI.foregroundColor {
