@@ -235,7 +235,6 @@ public extension AttributeContainer {
 		var rv = self
 		if let font = rv.swiftUI.font, rv.uiKit.font == nil { print(".",terminator: "")
 			rv.uiKit.font = font.uiFont(with: traitCollection)
-			rv.swiftUI.font = nil
 		}
 		if rv.uiKit.font == nil { print("b",terminator: "")
 			rv.uiKit.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
@@ -279,7 +278,6 @@ extension AttributedString {
 			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
 			nsAttributedString.append(nsText)
 		}
-		print(characters.isEmpty ? "" : "\(characters.first!)",terminator: "")
 		return nsAttributedString
 	}
 
