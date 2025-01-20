@@ -233,7 +233,7 @@ extension NSAttributedString {
 public extension AttributeContainer {
 	func swiftUIToUIKit(with traitCollection: UITraitCollection = .current) -> AttributeContainer {
 		var rv = self
-		if let font = rv.swiftUI.font, rv.uiKit.font == nil { print(".",terminator: "")
+		if let font = rv.swiftUI.font, rv.uiKit.font == nil { debugPrint("Converting font")
 			rv.uiKit.font = font.uiFont(with: traitCollection)
 		}
 		if rv.uiKit.font == nil { print("b",terminator: "")
