@@ -40,6 +40,7 @@ public struct RichTextEditor: UIViewRepresentable {
 				accessoryView.frame = frameSize }
 			return accessoryView
 		}()
+		attributedText = attributedText.nsAttributedString().attributedStringFromUIKit
 		configure(textView)
 		return textView
 	}
