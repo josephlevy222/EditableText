@@ -279,6 +279,7 @@ extension AttributedString {
 			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
 			nsAttributedString.append(nsText)
 		}
+		print(characters.isEmpty ? "" : "\(characters.first!)",terminator: "")
 		return nsAttributedString
 	}
 
