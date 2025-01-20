@@ -118,7 +118,7 @@ public struct EditableTextInPopover: View {
 						}
 					}
 			}
-			.onReceive(keyboardPublisher) { shows in print("keyboard \(shows)")
+			.onReceive(keyboardPublisher) { shows in //print("keyboard \(shows)")
 				DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
 					// Wait long enough for keyboard to have repositioned everything
 					keyboardShown = shows
