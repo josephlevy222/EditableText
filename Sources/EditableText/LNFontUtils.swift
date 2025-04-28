@@ -229,7 +229,7 @@ extension NSAttributedString {
 		(try? AttributedString(self, including: \.uiKit)) ?? AttributedString(self)
 	}
 	
-	func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
+	public func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
 		let boundingRect = self.boundingRect(
 			with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
 			options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -293,7 +293,7 @@ extension AttributedString {
 		}
 	}
 	
-	func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
+	public func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
 		return self.nsAttributedString().calculateSize(maxWidth: maxWidth)
 	}
 	
