@@ -51,7 +51,7 @@ fileprivate extension UIFont {
 		}
 		return with(symbolicTraits: traits)
 	}
-
+	
 	var monospaced: UIFont {
 		let weight: UIFont.Weight
 		if let existingWeight = (CTFontCopyTraits(self) as NSDictionary)[kCTFontWeightTrait as String] as? CGFloat {
@@ -205,7 +205,7 @@ fileprivate extension SwiftUI.Font {
 				self = .platform(font)
 				
 			case "NamedProvider":
-				guard let name = mirror.descendant("name") as? String, let size = mirror.descendant("size") as? CGFloat 
+				guard let name = mirror.descendant("name") as? String, let size = mirror.descendant("size") as? CGFloat
 				else { return nil }
 				
 				let font = UIFont(name: name, size: size)
@@ -228,15 +228,24 @@ extension NSAttributedString {
 	public var attributedStringFromUIKit : AttributedString {
 		(try? AttributedString(self, including: \.uiKit)) ?? AttributedString(self)
 	}
+	
+	func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
+		let boundingRect = self.boundingRect(
+			with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+			options: [.usesLineFragmentOrigin, .usesFontLeading],
+			context: nil
+		)
+		return CGSize(width: ceil(boundingRect.width), height: ceil(boundingRect.height))
+	}
 }
 
 public extension AttributeContainer {
 	func swiftUIToUIKit(with traitCollection: UITraitCollection = .current) -> AttributeContainer {
 		var rv = self
-		if let font = rv.swiftUI.font, rv.uiKit.font == nil { debugPrint("Converting font")
+		if let font = rv.swiftUI.font, rv.uiKit.font == nil { //debugPrint("Converting font")
 			rv.uiKit.font = font.uiFont(with: traitCollection)
 		}
-		if rv.uiKit.font == nil { print("b",terminator: "")
+		if rv.uiKit.font == nil { //print("b",terminator: "")
 			rv.uiKit.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
 		}
 		if let foregroundColor = rv.swiftUI.foregroundColor {
@@ -272,15 +281,22 @@ public extension AttributeContainer {
 
 extension AttributedString {
 	public func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
-		let nsAttributedString = NSMutableAttributedString()
-		for run in runs {
-			let attributes = run.attributes.swiftUIToUIKit()
-			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
-			nsAttributedString.append(nsText)
+		//		let nsAttributedString = NSMutableAttributedString(t)
+		//		for run in runs {
+		//			let attributes = run.attributes.swiftUIToUIKit()
+		//			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
+		//			nsAttributedString.append(nsText)
+		//		}
+		//		return nsAttributedString
+		return runs.reduce(into: NSMutableAttributedString()) {
+			$0.append(NSAttributedString(AttributedString(self[$1.range]).settingAttributes($1.attributes.swiftUIToUIKit())))
 		}
-		return nsAttributedString
 	}
-
+	
+	func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
+		return self.nsAttributedString().calculateSize(maxWidth: maxWidth)
+	}
+	
 	/// AttributedString(styledMarkdown: String, fonts: [Font]) puts fonts into Headers 1-6 shown in list
 	/// and setFont for SwiftUI.Font, along with setBold, and setItalic that work with SwiftUI.Font and UIFont
 	/// embedded in the attributed string
@@ -302,8 +318,8 @@ extension AttributedString {
 			for intent in intentBlock.components {
 				if case .header(level: let level) = intent.kind {
 					if level > 0 && level < fontStyles.count {
-						output[intentRange].font = 
-						    UIFont.preferredFont(forTextStyle: UIFont.preferredFontStyle(from: fontStyles[level]))
+						output[intentRange].font =
+						UIFont.preferredFont(forTextStyle: UIFont.preferredFontStyle(from: fontStyles[level]))
 					}
 				}
 			}
@@ -321,28 +337,26 @@ extension AttributedString {
 	}
 	
 	public func setBold() -> AttributedString {
-		var newAS = self
-		for run in runs {
+		runs.reduce(into: self) { newAS, run in
 			if let uiFont = run.uiKit.font {
-				newAS[run.range].font = uiFont.bold()  }
-			else {
+				newAS[run.range].font = uiFont.bold()
+			} else {
 				newAS[run.range].font = (run.font ?? .body).bold()
 			}
 		}
-		return newAS
 	}
 	
 	public func setItalic() -> AttributedString {
-		var newAS = self
-		for run in runs {
+		runs.reduce(into: self) { newAS, run in
 			if let uiFont = run.uiKit.font {
 				let isBold = uiFont.contains(trait: .traitBold)
-				newAS[run.range].font = isBold ? uiFont.italic()?.withWeight(.bold) ?? uiFont.bold() : uiFont.italic()
+				newAS[run.range].font = isBold ?
+				uiFont.italic()?.withWeight(.bold) ?? uiFont.bold() :
+				uiFont.italic()
 			} else {
 				newAS[run.range].font = (run.font ?? .body).italic()
 			}
 		}
-		return newAS
 	}
 	
 	public func setUnderline() -> AttributedString {
@@ -359,7 +373,7 @@ extension String {
 	}
 }
 
-/// Convient extensions of UIFont and UIFontDescriptor
+/// Convenient extensions of UIFont and UIFontDescriptor
 extension UIFont {
 	public convenience init(font: Font, traitCollection: UITraitCollection = .current) {
 		if let uiFont = font.uiFont(with: traitCollection) {
@@ -410,10 +424,10 @@ extension UIFontDescriptor {
 		symbolicTraits.contains(trait)
 	}
 	public func withWeight(_ weight: UIFont.Weight?) -> UIFontDescriptor {
-		if let weight { return addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: weight]])} else { return self }
+		weight == nil ? self :  addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: weight]])
 	}
 	public func withWidth(_ width: UIFont.Width?) -> UIFontDescriptor {
-		if let width { return addingAttributes([.traits: [UIFontDescriptor.TraitKey.width: width]]) } else { return self }
+		width == nil ? self : addingAttributes([.traits: [UIFontDescriptor.TraitKey.width: width]])
 	}
 	public var weight: UIFont.Weight { // nil means no weight trait is set
 		let traits = object(forKey: .traits) as? [UIFontDescriptor.TraitKey: Any] ?? [:]
