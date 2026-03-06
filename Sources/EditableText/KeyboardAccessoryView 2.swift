@@ -283,12 +283,12 @@ public struct KeyboardAccessoryView: View {
         }
     }
     
-    private func toggleSubscript() {
+    func toggleSubscript() {
         toolbar.isSubscript.toggle()
         toggleScript(sub: true)
     }
     
-    private func toggleSuperscript() {
+    func toggleSuperscript() {
         toolbar.isSuperscript.toggle()
         toggleScript(sub: false)
     }
@@ -379,7 +379,7 @@ public struct KeyboardAccessoryView: View {
         updateAttributedText(with: attributedString)
     }
     
-    private func alignText() {
+    func alignText() {
 		inputClick.play(!toolbar.sound)
 		toolbar.textAlignment = switch toolbar.textAlignment {
 			case .left: .center
@@ -455,11 +455,11 @@ public struct KeyboardAccessoryView: View {
         textView.selectedRange = textRange // restore range
     }
     
-    private func increaseFontSize() {
+    func increaseFontSize() {
         adjustFontSize(isIncrease: true)
     }
     
-    private func decreaseFontSize() {
+    func decreaseFontSize() {
         adjustFontSize(isIncrease: false)
     }
     
@@ -470,12 +470,12 @@ public struct KeyboardAccessoryView: View {
     }
     
     // MARK: - Color Selection Button Actions
-    private func selectColor() {
+    func selectColor() {
         let color = UIColor(toolbar.color)
         textEffect(range: textView.selectedRange, key: .foregroundColor, value: color, defaultValue: color)
     }
     
-    private func selectBackground() {
+    func selectBackground() {
         let color = UIColor(toolbar.background)
         textEffect(range: textView.selectedRange, key: .backgroundColor, value: color, defaultValue: color)
     }

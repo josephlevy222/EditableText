@@ -8,24 +8,27 @@ import SwiftUI
 
 public struct RichTextEditor: UIViewRepresentable {
 	public init(attributedText: Binding<AttributedString>, alignment: Binding<TextAlignment>,
-				  configuration: @escaping (UITextView) -> () = { _ in }) {
+				toolbar: Binding<KeyboardToolbar>? = nil,
+				configuration: @escaping (UITextView) -> () = { _ in }) {
 		_attributedText = attributedText
 		_alignment = alignment
+		_toolbar = toolbar ?? .constant(KeyboardToolbar(textView: RichTextView()))
 		configure = configuration
 	}
 	@Binding var attributedText: AttributedString
 	@Binding var alignment: TextAlignment
-	@State private var toolbar = KeyboardToolbar(textView: RichTextView())
+	// toolbar (and its embedded RichTextView) may be owned here or passed in from
+	// EditableText so that MacFormattingToolbar shares the same instance on macCatalyst.
+	@Binding private var toolbar: KeyboardToolbar
 	public var configure = { (view: UITextView) in }
 
-	var textView: RichTextView { toolbar.textView } // created with toolbar above
+	var textView: RichTextView { toolbar.textView }
 
 	public func makeUIView(context: Context) -> UITextView {
-		// On macCatalyst there is no software keyboard, so inputAccessoryView is
-		// never shown and KeyboardAccessoryView must not be instantiated here at all.
-		// Leaving accessoryView nil means the toggle* overrides in CustomizePopoverMenus
-		// will safely fall through to super — correct Mac behaviour.
-		// The MacFormattingToolbar in EditableText handles formatting on Mac instead.
+		// On macCatalyst there is no software keyboard.
+		// Leave accessoryView nil — CustomizePopoverMenus toggle* overrides
+		// will fall through to super, which is correct Mac behaviour.
+		// MacFormattingToolbar in EditableText handles formatting via the shared toolbar.
 		#if !targetEnvironment(macCatalyst)
 		textView.accessoryView = KeyboardAccessoryView(toolbar: $toolbar)
 		let accessoryViewController = UIHostingController(rootView: textView.accessoryView!)
