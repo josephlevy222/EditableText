@@ -32,6 +32,9 @@ public struct RichTextEditor: UIViewRepresentable {
 		textView.backgroundColor = .clear
 		textView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 		textView.typingAttributes[.font] = UIFont.preferredFont(forTextStyle: .body)
+		
+		// inputAccessoryView is a keyboard concept — not applicable on macCatalyst
+		#if !targetEnvironment(macCatalyst)
 		let accessoryViewController = UIHostingController(rootView: textView.accessoryView)
 		textView.inputAccessoryView = {
 			let accessoryView = accessoryViewController.view
@@ -40,6 +43,8 @@ public struct RichTextEditor: UIViewRepresentable {
 				accessoryView.frame = frameSize }
 			return accessoryView
 		}()
+		#endif
+		
 		DispatchQueue.main.async { attributedText = attributedText.nsAttributedString().attributedStringFromUIKit }
 		configure(textView)
 		return textView
@@ -63,10 +68,7 @@ public struct RichTextEditor: UIViewRepresentable {
 		}
 		
 		public func textViewDidChange(_ textView: UITextView) {
-//			if textView.attributedText.string != parent.placeholder {
-				parent.attributedText =  textView.attributedText.attributedStringFromUIKit
-//			}
-			//print("text did change")
+			parent.attributedText =  textView.attributedText.attributedStringFromUIKit
 			parent.alignment = textView.textAlignment.textAlignment
 		}
 	}
