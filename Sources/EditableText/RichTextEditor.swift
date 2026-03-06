@@ -17,58 +17,59 @@ public struct RichTextEditor: UIViewRepresentable {
 	@Binding var alignment: TextAlignment
 	@State private var toolbar = KeyboardToolbar(textView: RichTextView())
 	public var configure = { (view: UITextView) in }
-	
+
 	var textView: RichTextView { toolbar.textView } // created with toolbar above
-	
+
 	public func makeUIView(context: Context) -> UITextView {
+		// On macCatalyst there is no software keyboard, so inputAccessoryView is
+		// never shown and KeyboardAccessoryView must not be instantiated here at all.
+		// Leaving accessoryView nil means the toggle* overrides in CustomizePopoverMenus
+		// will safely fall through to super — correct Mac behaviour.
+		// The MacFormattingToolbar in EditableText handles formatting on Mac instead.
+		#if !targetEnvironment(macCatalyst)
 		textView.accessoryView = KeyboardAccessoryView(toolbar: $toolbar)
+		let accessoryViewController = UIHostingController(rootView: textView.accessoryView!)
+		textView.inputAccessoryView = {
+			let accessoryView = accessoryViewController.view
+			if let accessoryView {
+				accessoryView.frame = CGRect(x: 0, y: 0, width: 100, height: 44)
+			}
+			return accessoryView
+		}()
+		#endif
+
 		textView.textContainerInset = UIEdgeInsets.zero
 		textView.textContainer.lineFragmentPadding = 0
 		textView.allowsEditingTextAttributes = true
 		textView.delegate = context.coordinator
 		textView.isEditable = true
 		textView.textColor = .label
-		
 		textView.backgroundColor = .clear
 		textView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 		textView.typingAttributes[.font] = UIFont.preferredFont(forTextStyle: .body)
-		
-		// inputAccessoryView is a keyboard concept — not applicable on macCatalyst
-		#if !targetEnvironment(macCatalyst)
-		let accessoryViewController = UIHostingController(rootView: textView.accessoryView)
-		textView.inputAccessoryView = {
-			let accessoryView = accessoryViewController.view
-			if let accessoryView {
-				let frameSize = CGRect(x: 0, y: 0, width: 100, height: 44)
-				accessoryView.frame = frameSize }
-			return accessoryView
-		}()
-		#endif
-		
 		DispatchQueue.main.async { attributedText = attributedText.nsAttributedString().attributedStringFromUIKit }
 		configure(textView)
 		return textView
 	}
-	
+
 	public func updateUIView(_ uiView: UITextView, context: Context) {
 		uiView.textStorage.setAttributedString(attributedText.nsAttributedString())
 		uiView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
-		//debugPrint("update UITextView")
 	}
-	
+
 	public func makeCoordinator() -> Coordinator {
 		Coordinator(self)
 	}
-	
+
 	public class Coordinator: NSObject, UITextViewDelegate {
 		var parent: RichTextEditor
-		
+
 		init(_ parent: RichTextEditor) {
 			self.parent = parent
 		}
-		
+
 		public func textViewDidChange(_ textView: UITextView) {
-			parent.attributedText =  textView.attributedText.attributedStringFromUIKit
+			parent.attributedText = textView.attributedText.attributedStringFromUIKit
 			parent.alignment = textView.textAlignment.textAlignment
 		}
 	}
