@@ -107,10 +107,10 @@ private struct MacFormattingToolbar: View {
 			// Color pickers
 			ColorPicker("", selection: $toolbar.color, supportsOpacity: true)
 				.labelsHidden()
-				.onChange(of: toolbar.color) { _, _ in accessory.selectColor() }
+				.onChange(of: toolbar.color) {  _ in accessory.selectColor() }
 			ColorPicker("", selection: $toolbar.background, supportsOpacity: true)
 				.labelsHidden()
-				.onChange(of: toolbar.background) { _, _ in accessory.selectBackground() }
+				.onChange(of: toolbar.background) { _ in accessory.selectBackground() }
 
 			Spacer()
 		}
