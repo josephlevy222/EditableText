@@ -35,7 +35,7 @@ private extension UIWindow {
     /// The underlying NSWindow, reached via the scene bridge.
     var nsWindow: NSObject? {
         // UIWindowScene → _nsWindowSceneBridge → nsWindow
-		guard let scene = windowScene else { return nil }
+		guard let scene = windowScene as? NSObject else { return nil }
         // "_nsWindowSceneBridge" is stable across macCatalyst 13–17+
         guard scene.responds(to: NSSelectorFromString("_nsWindowSceneBridge")),
               let bridge = scene.value(forKey: "_nsWindowSceneBridge") as? NSObject
@@ -60,6 +60,11 @@ private extension UIWindow {
         let styleMask: UInt = 1 | 2 | 16 | 128
         ns.setValue(styleMask, forKey: "styleMask")
 
+        // NSFloatingWindowLevel = 3: sits above all normal windows including the
+        // app's own main window. This is what keeps the palette on top of the app.
+        // (UIWindow.Level.alert only affects UIKit z-order, not NSWindow level.)
+        ns.setValue(Int(3), forKey: "level")
+
         // isMovableByWindowBackground: dragging anywhere on the window moves it,
         // matching the behaviour of the system Fonts / Colors panels.
         ns.setValue(true, forKey: "isMovableByWindowBackground")
@@ -70,8 +75,7 @@ private extension UIWindow {
         // Standard memory management — don't release on close
         ns.setValue(false, forKey: "isReleasedWhenClosed")
 
-        // Position: NSWindow origin is bottom-left; UIKit is top-left.
-        // We receive a UIKit-space origin so convert y here.
+        // Position: NSWindow origin is bottom-left (y=0 at bottom of screen).
         // setFrameOrigin: takes an NSPoint (= CGPoint on macOS).
         ns.perform(NSSelectorFromString("setFrameOrigin:"),
                    with: NSValue(cgPoint: origin))
@@ -137,12 +141,29 @@ public final class FormattingPalette {
         // After the window is visible, configure the underlying NSWindow as a
         // free-floating utility panel. Must be deferred so the scene bridge exists.
         DispatchQueue.main.async {
-            let screenBounds = scene.screen.bounds
-            // NSWindow origin is bottom-left (y=0 at bottom of screen).
-            // Place palette near top-centre: 60 pts below the top of the screen.
+            // Get the NSWindow to read the NSScreen frame for coordinate conversion.
+            // NSScreen.frame is in AppKit screen coordinates (y=0 at bottom of
+            // the primary screen). The menu bar is at the top, so usable content
+            // starts at screenFrame.height - menuBarHeight from the bottom.
+            // We place the palette just below a typical toolbar (~100 pts from top).
+            guard let ns = window.nsWindow,
+                  let nsScreen = ns.value(forKey: "screen") as? NSObject,
+                  let screenFrame = nsScreen.value(forKey: "frame") as? CGRect
+            else {
+                // Fallback: use UIKit bounds with a rough y flip
+                let screenBounds = scene.screen.bounds
+                let origin = CGPoint(
+                    x: (screenBounds.width - paletteSize.width) / 2,
+                    y: screenBounds.height - 150
+                )
+                window.configureAsPanel(at: origin, size: paletteSize)
+                return
+            }
+            // Place palette near top-centre of the screen, below menu bar + toolbar.
+            // 100 pts from the top in NSWindow coords = screenFrame.maxY - 100 - paletteHeight
             let origin = CGPoint(
-                x: (screenBounds.width - paletteSize.width) / 2,
-                y: screenBounds.height - 60 - paletteSize.height
+                x: screenFrame.minX + (screenFrame.width - paletteSize.width) / 2,
+                y: screenFrame.maxY - 100 - paletteSize.height
             )
             window.configureAsPanel(at: origin, size: paletteSize)
         }
