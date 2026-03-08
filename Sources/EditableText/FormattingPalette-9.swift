@@ -35,7 +35,7 @@ private extension UIWindow {
     /// The underlying NSWindow, reached via the scene bridge.
     var nsWindow: NSObject? {
         // UIWindowScene → _nsWindowSceneBridge → nsWindow
-		guard let scene = windowScene as? NSObject else { return nil }
+        guard let scene = windowScene as? NSObject else { return nil }
         // "_nsWindowSceneBridge" is stable across macCatalyst 13–17+
         guard scene.responds(to: NSSelectorFromString("_nsWindowSceneBridge")),
               let bridge = scene.value(forKey: "_nsWindowSceneBridge") as? NSObject
@@ -47,10 +47,13 @@ private extension UIWindow {
     /// Must be called after the window is visible so the bridge exists.
     func configureAsPanel(at origin: CGPoint, size: CGSize) {
         guard let ns = nsWindow else {
-            // Bridge not ready — retry on next runloop turn
-            DispatchQueue.main.async { self.configureAsPanel(at: origin, size: size) }
+            print("[FormattingPalette] nsWindow nil — retrying in 0.1s")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.configureAsPanel(at: origin, size: size)
+            }
             return
         }
+        print("[FormattingPalette] nsWindow found: \(ns)")
 
         // NSWindowStyleMask bits (AppKit constants without importing AppKit):
         //   titled            = 1
@@ -75,10 +78,19 @@ private extension UIWindow {
         // Standard memory management — don't release on close
         ns.setValue(false, forKey: "isReleasedWhenClosed")
 
+        // Current frame before move
+        if let currentFrame = ns.value(forKey: "frame") as? CGRect {
+            print("[FormattingPalette] current NSWindow frame=\(currentFrame)")
+        }
         // Position: NSWindow origin is bottom-left (y=0 at bottom of screen).
         // setFrameOrigin: takes an NSPoint (= CGPoint on macOS).
+        print("[FormattingPalette] calling setFrameOrigin: \(origin)")
         ns.perform(NSSelectorFromString("setFrameOrigin:"),
                    with: NSValue(cgPoint: origin))
+        // Verify the move took effect
+        if let newFrame = ns.value(forKey: "frame") as? CGRect {
+            print("[FormattingPalette] NSWindow frame after setFrameOrigin=\(newFrame)")
+        }
     }
 }
 
@@ -150,8 +162,10 @@ public final class FormattingPalette {
                   let nsScreen = ns.value(forKey: "screen") as? NSObject,
                   let screenFrame = nsScreen.value(forKey: "frame") as? CGRect
             else {
-                // Fallback: use UIKit bounds with a rough y flip
+                print("[FormattingPalette] screen KVC failed — using UIKit fallback")
+                print("[FormattingPalette] nsWindow=\(String(describing: window.nsWindow))")
                 let screenBounds = scene.screen.bounds
+                print("[FormattingPalette] UIKit screenBounds=\(screenBounds)")
                 let origin = CGPoint(
                     x: (screenBounds.width - paletteSize.width) / 2,
                     y: screenBounds.height - 150
@@ -159,12 +173,12 @@ public final class FormattingPalette {
                 window.configureAsPanel(at: origin, size: paletteSize)
                 return
             }
-            // Place palette near top-centre of the screen, below menu bar + toolbar.
-            // 100 pts from the top in NSWindow coords = screenFrame.maxY - 100 - paletteHeight
+            print("[FormattingPalette] NSScreen frame=\(screenFrame)")
             let origin = CGPoint(
                 x: screenFrame.minX + (screenFrame.width - paletteSize.width) / 2,
                 y: screenFrame.maxY - 100 - paletteSize.height
             )
+            print("[FormattingPalette] placing at origin=\(origin)")
             window.configureAsPanel(at: origin, size: paletteSize)
         }
 
