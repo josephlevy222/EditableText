@@ -34,22 +34,71 @@ private extension UIWindow {
 
     /// The underlying NSWindow, reached via the scene bridge.
     var nsWindow: NSObject? {
-        // UIWindowScene → _nsWindowSceneBridge → nsWindow
-        guard let scene = windowScene as? NSObject else { return nil }
-        // "_nsWindowSceneBridge" is stable across macCatalyst 13–17+
-        guard scene.responds(to: NSSelectorFromString("_nsWindowSceneBridge")),
-              let bridge = scene.value(forKey: "_nsWindowSceneBridge") as? NSObject
-        else { return nil }
-        return bridge.value(forKey: "nsWindow") as? NSObject
+        guard let scene = windowScene as? NSObject else {
+            print("[FormattingPalette] windowScene is nil or not NSObject")
+            return nil
+        }
+
+        // Probe every known bridge key across macCatalyst versions
+        let bridgeKeys = [
+            "_nsWindowSceneBridge",
+            "nsWindowSceneBridge",
+            "_windowSceneBridge",
+            "windowBridge",
+            "_bridge",
+        ]
+        for key in bridgeKeys {
+            if scene.responds(to: NSSelectorFromString(key)) {
+                print("[FormattingPalette] scene responds to key: \(key)")
+                if let bridge = scene.value(forKey: key) as? NSObject {
+                    print("[FormattingPalette] bridge found via \(key): \(bridge)")
+                    // Try known nsWindow sub-keys
+                    for subKey in ["nsWindow", "_nsWindow", "window", "uiWindow"] {
+                        if bridge.responds(to: NSSelectorFromString(subKey)),
+                           let w = bridge.value(forKey: subKey) as? NSObject {
+                            print("[FormattingPalette] nsWindow found via \(key).\(subKey): \(w)")
+                            return w
+                        }
+                    }
+                }
+            }
+        }
+
+        // Last resort: walk the responder chain looking for something that
+        // responds to contentViewController (characteristic of NSWindow)
+        print("[FormattingPalette] bridge probe failed — walking responder chain")
+        var responder: UIResponder? = self
+        while let r = responder {
+            let obj = r as AnyObject
+            if obj.responds(to: NSSelectorFromString("contentViewController")) {
+                print("[FormattingPalette] found NSWindow-like via responder chain: \(r)")
+                return r as? NSObject
+            }
+            responder = r.next
+        }
+
+        // Dump what keys the scene actually has so we can find the right one
+        print("[FormattingPalette] all probe keys failed. scene class: \(type(of: scene))")
+        for key in ["_ns", "ns", "window", "bridge", "appKit", "mac", "host"] {
+            let sel = NSSelectorFromString(key)
+            if scene.responds(to: sel) {
+                print("[FormattingPalette]   scene responds to: \(key)")
+            }
+        }
+        return nil
     }
 
     /// Configure the underlying NSWindow as a free-floating utility panel.
     /// Must be called after the window is visible so the bridge exists.
-    func configureAsPanel(at origin: CGPoint, size: CGSize) {
+    func configureAsPanel(at origin: CGPoint, size: CGSize, attempt: Int = 0) {
         guard let ns = nsWindow else {
-            print("[FormattingPalette] nsWindow nil — retrying in 0.1s")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.configureAsPanel(at: origin, size: size)
+            guard attempt < 5 else {
+                print("[FormattingPalette] nsWindow still nil after \(attempt) attempts — giving up")
+                return
+            }
+            print("[FormattingPalette] nsWindow nil — retrying (attempt \(attempt + 1))")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.configureAsPanel(at: origin, size: size, attempt: attempt + 1)
             }
             return
         }
@@ -179,7 +228,7 @@ public final class FormattingPalette {
                 y: screenFrame.maxY - 100 - paletteSize.height
             )
             print("[FormattingPalette] placing at origin=\(origin)")
-            window.configureAsPanel(at: origin, size: paletteSize)
+            window.configureAsPanel(at: origin, size: paletteSize, attempt: 0)
         }
 
         self.hostingController = host
