@@ -18,48 +18,63 @@ import SwiftUI
 import UIKit
 
 // MARK: - AppKit bridge
-// UIKit on macCatalyst exposes the underlying NSWindow via a private-but-stable
-// property. We access it through NSObject KVC to avoid importing AppKit directly.
+//
+// On macCatalyst every UIWindow is backed by an NSWindow. The path to it is:
+//   UIWindow → windowScene → _nsWindowSceneBridge → nsWindow
+//
+// All three steps use KVC on NSObject so we never import AppKit directly.
+// The bridge object is a UINSWindowMapper / _UIWindowSceneBridge (private class)
+// that forwards KVC to the real NSWindow.
+//
+// IMPORTANT: call configureAsPanel() only after the window is visible
+// (i.e. inside a DispatchQueue.main.async after isHidden = false),
+// otherwise the bridge hasn't been created yet and nsWindow returns nil.
 
 private extension UIWindow {
+
+    /// The underlying NSWindow, reached via the scene bridge.
     var nsWindow: NSObject? {
-        var responder: UIResponder? = self
-        while let r = responder {
-            if NSClassFromString("NSWindow") != nil,
-               r.responds(to: NSSelectorFromString("contentViewController")) {
-                return r as NSObject
-            }
-            responder = r.next
-        }
-        // Fallback: use the windowScene's UIWindowSceneBridge
-        return value(forKey: "nsWindow") as? NSObject
+        // UIWindowScene → _nsWindowSceneBridge → nsWindow
+		guard let scene = windowScene else { return nil }
+        // "_nsWindowSceneBridge" is stable across macCatalyst 13–17+
+        guard scene.responds(to: NSSelectorFromString("_nsWindowSceneBridge")),
+              let bridge = scene.value(forKey: "_nsWindowSceneBridge") as? NSObject
+        else { return nil }
+        return bridge.value(forKey: "nsWindow") as? NSObject
     }
 
-    /// Move the underlying NSWindow to a screen position and make it free-floating.
+    /// Configure the underlying NSWindow as a free-floating utility panel.
+    /// Must be called after the window is visible so the bridge exists.
     func configureAsPanel(at origin: CGPoint, size: CGSize) {
-        guard let ns = nsWindow else { return }
-        // NSWindowStyleMask: titled=1, closable=2, utilityWindow=16, nonActivatingPanel=128
-        // NSWindowCollectionBehavior: canJoinAllSpaces=1, managed=4
-        let styleMask: UInt = 1 | 2 | 16 | 128   // titled + closable + utility + non-activating
-        ns.setValue(styleMask, forKey: "styleMask")
-        ns.setValue(true, forKey: "isMovableByWindowBackground")
-        ns.setValue(true, forKey: "hidesOnDeactivate")
-        ns.setValue(false, forKey: "isReleasedWhenClosed")
-        // Allow window to move outside the app's own frame
-        ns.perform(NSSelectorFromString("setMovable:"), with: true)
-        // Position on screen
-        if let setFrame = ns.value(forKey: "screen") as? NSObject {
-            _ = setFrame // screen available; position is handled by setFrameOrigin
+        guard let ns = nsWindow else {
+            // Bridge not ready — retry on next runloop turn
+            DispatchQueue.main.async { self.configureAsPanel(at: origin, size: size) }
+            return
         }
-        let frameDict: [String: Any] = [
-            "x": origin.x, "y": origin.y,
-            "width": size.width, "height": size.height
-        ]
-        _ = frameDict // actual positioning done via setFrameOrigin below
-        ns.perform(
-            NSSelectorFromString("setFrameOrigin:"),
-            with: NSValue(cgPoint: origin)
-        )
+
+        // NSWindowStyleMask bits (AppKit constants without importing AppKit):
+        //   titled            = 1
+        //   closable          = 2
+        //   utilityWindow     = 16   → makes it an NSPanel subclass visually
+        //   nonActivatingPanel = 128 → clicking palette doesn't steal key window
+        let styleMask: UInt = 1 | 2 | 16 | 128
+        ns.setValue(styleMask, forKey: "styleMask")
+
+        // isMovableByWindowBackground: dragging anywhere on the window moves it,
+        // matching the behaviour of the system Fonts / Colors panels.
+        ns.setValue(true, forKey: "isMovableByWindowBackground")
+
+        // Keep visible when the app is not front-most (like the system panels)
+        ns.setValue(false, forKey: "hidesOnDeactivate")
+
+        // Standard memory management — don't release on close
+        ns.setValue(false, forKey: "isReleasedWhenClosed")
+
+        // Position: NSWindow origin is bottom-left; UIKit is top-left.
+        // We receive a UIKit-space origin so convert y here.
+        // setFrameOrigin: takes an NSPoint (= CGPoint on macOS).
+        ns.perform(NSSelectorFromString("setFrameOrigin:"),
+                   with: NSValue(cgPoint: origin))
     }
 }
 
@@ -119,14 +134,15 @@ public final class FormattingPalette {
         window.rootViewController = host
         window.isHidden = false
 
-        // After the window is shown, configure the underlying NSWindow as a
-        // free-floating utility panel that can move outside the app bounds.
+        // After the window is visible, configure the underlying NSWindow as a
+        // free-floating utility panel. Must be deferred so the scene bridge exists.
         DispatchQueue.main.async {
-            // Position near top-centre of screen
             let screenBounds = scene.screen.bounds
+            // NSWindow origin is bottom-left (y=0 at bottom of screen).
+            // Place palette near top-centre: 60 pts below the top of the screen.
             let origin = CGPoint(
                 x: (screenBounds.width - paletteSize.width) / 2,
-                y: screenBounds.height - 120  // NSWindow y-axis is flipped (0 = bottom)
+                y: screenBounds.height - 60 - paletteSize.height
             )
             window.configureAsPanel(at: origin, size: paletteSize)
         }
