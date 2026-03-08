@@ -6,9 +6,6 @@
 //  current UIWindowScene so it floats freely, is draggable, and never
 //  interferes with the text view's layout.
 //
-//  Usage: EditableText calls FormattingPalette.shared.show(toolbar:) when
-//  it gains focus and FormattingPalette.shared.detach() when it loses focus.
-//
 //  Requires iOS 15+. Uses ObservableObject (not @Observable) for compatibility.
 //
 
@@ -16,86 +13,128 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Passthrough window
+// Only receives touches that land on actual opaque/interactive content.
+// Transparent areas return nil from hitTest so touches fall through to
+// whatever is underneath — prevents the palette from stealing taps from
+// the plot or other views.
+
+private class PassthroughWindow: UIWindow {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let hitView = super.hitTest(point, with: event) else { return nil }
+        // If the hit view is the window itself or the hosting controller's
+        // root view background, let the touch fall through.
+        return hitView == self || hitView == rootViewController?.view ? nil : hitView
+    }
+}
+
 // MARK: - Singleton palette manager
 
 final class FormattingPalette {
     static let shared = FormattingPalette()
     private init() {}
 
-    private var paletteWindow: UIWindow?
-    private var hostingController: UIHostingController<AnyView>?
-
-    // The observable box lets us swap which toolbar the palette is
-    // pointing at without tearing down the window.
+    private var paletteWindow: PassthroughWindow?
+    private var hostView: UIView?
     private let box = ToolbarBox()
 
     /// Call when an EditableText gains focus.
     func show(toolbar: Binding<KeyboardToolbar>) {
+        activeID = ObjectIdentifier(toolbar.wrappedValue.textView)
         box.binding = toolbar
         if paletteWindow == nil { buildWindow() }
         paletteWindow?.isHidden = false
     }
 
-    /// Call when an EditableText loses focus.
+    private var activeID: ObjectIdentifier? = nil
+
+    /// True when the palette window is showing. Used by XYPlot to suppress
+    /// PlotSettings presentation when a toolbar button tap passes through.
+    var isVisible: Bool { !(paletteWindow?.isHidden ?? true) }
+
+    /// Call when an EditableText loses focus (unconditional hide).
     func detach() {
+        activeID = nil
         paletteWindow?.isHidden = true
+    }
+
+    /// Only hides if no other EditableText has grabbed focus since detach was
+    /// scheduled. Compares by the ObjectIdentifier of the RichTextView so a
+    /// rapid X->Y focus transfer doesn't flash the palette away.
+    func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {
+        let requestID = ObjectIdentifier(toolbar.wrappedValue.textView)
+        guard requestID == activeID else { return }
+        detach()
     }
 
     private func buildWindow() {
         guard let scene = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene }).first else { return }
 
-        let window = UIWindow(windowScene: scene)
-        window.windowLevel = .alert         // floats above the main window
+        let window = PassthroughWindow(windowScene: scene)
+        window.windowLevel = .alert
         window.backgroundColor = .clear
         window.isUserInteractionEnabled = true
 
         let content = PaletteView(box: box)
         let host = UIHostingController(rootView: AnyView(content))
         host.view.backgroundColor = .clear
-        host.view.frame = CGRect(x: 100, y: 100, width: 460, height: 52)
 
+        let paletteSize = CGSize(width: 480, height: 52)
+        host.view.frame = CGRect(origin: .zero, size: paletteSize)
+
+        // Position palette near the top of the screen, centred
+        let screenBounds = scene.screen.bounds
+        let origin = CGPoint(
+            x: (screenBounds.width - paletteSize.width) / 2,
+            y: 80
+        )
+        window.frame = CGRect(origin: origin, size: paletteSize)
         window.addSubview(host.view)
-        window.frame = host.view.frame
 
-        // Make the window draggable
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-        window.addGestureRecognizer(pan)
-
-        self.hostingController = host
+        self.hostView = host.view
         self.paletteWindow = window
-        window.makeKeyAndVisible()
+
+        // Use isHidden rather than makeKeyAndVisible so we don't steal
+        // key window status from the main window (which would break focus).
+        window.isHidden = false
     }
 
-    @objc private func handlePan(_ gr: UIPanGestureRecognizer) {
+    /// Called from the SwiftUI DragGesture on the palette's drag handle.
+    /// `translation` is cumulative from drag start, so we track the origin.
+    private var dragStartOrigin: CGPoint = .zero
+    var isDragging = false
+
+    func dragStarted() {
+        isDragging = true
+        dragStartOrigin = paletteWindow?.frame.origin ?? .zero
+    }
+
+    func dragMoved(translation: CGSize) {
         guard let window = paletteWindow else { return }
-        let delta = gr.translation(in: nil)
-        gr.setTranslation(.zero, in: nil)
-        window.frame = window.frame.offsetBy(dx: delta.x, dy: delta.y)
+        window.frame.origin = CGPoint(
+            x: dragStartOrigin.x + translation.width,
+            y: dragStartOrigin.y + translation.height
+        )
     }
 }
 
-// MARK: - Observable box that holds the active toolbar binding
+// MARK: - Observable box
 
-/// ObservableObject (iOS 15 compatible) so PaletteView re-renders when a
-/// new EditableText is focused and swaps in its toolbar binding.
 final class ToolbarBox: ObservableObject {
     @Published var binding: Binding<KeyboardToolbar>? = nil
 }
 
-// MARK: - The palette SwiftUI view
+// MARK: - Palette SwiftUI views
 
 private struct PaletteView: View {
     @ObservedObject var box: ToolbarBox
-
     var body: some View {
         if let binding = box.binding {
             FormattingPaletteContent(toolbar: binding)
         }
     }
 }
-
-// MARK: - Palette content (buttons, pickers)
 
 struct FormattingPaletteContent: View {
     @Binding var toolbar: KeyboardToolbar
@@ -104,14 +143,29 @@ struct FormattingPaletteContent: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            // Drag handle
+            // Drag handle — drag this to move the palette window
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
                 .padding(.leading, 6)
+                .padding(.trailing, 4)
+                .contentShape(Rectangle().size(CGSize(width: 44, height: 44)))
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            // startLocation is constant for the lifetime of one drag,
+                            // so first call sets origin, subsequent calls move the window.
+                            if !FormattingPalette.shared.isDragging {
+                                FormattingPalette.shared.dragStarted()
+                            }
+                            FormattingPalette.shared.dragMoved(translation: value.translation)
+                        }
+                        .onEnded { _ in
+                            FormattingPalette.shared.isDragging = false
+                        }
+                )
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
-            // Bold / Italic / Underline / Strikethrough
             toolbarButton("bold",          highlighted: toolbar.isBold)          { accessory.toggleBoldface() }
             toolbarButton("italic",        highlighted: toolbar.isItalic)        { accessory.toggleItalics() }
             toolbarButton("underline",     highlighted: toolbar.isUnderline)     { accessory.toggleUnderline() }
@@ -119,13 +173,11 @@ struct FormattingPaletteContent: View {
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
-            // Super / Subscript
             toolbarButton("textformat.superscript", highlighted: toolbar.isSuperscript) { accessory.toggleSuperscript() }
             toolbarButton("textformat.subscript",   highlighted: toolbar.isSubscript)   { accessory.toggleSubscript() }
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
-            // Font size
             Button { accessory.decreaseFontSize() } label: {
                 Image(systemName: "minus.circle")
             }.buttonStyle(.plain)
@@ -140,7 +192,6 @@ struct FormattingPaletteContent: View {
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
-            // Text alignment
             Button { accessory.alignText() } label: {
                 Image(systemName: toolbar.textAlignment.imageName)
             }
@@ -149,7 +200,6 @@ struct FormattingPaletteContent: View {
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
-            // Color pickers — onChange single-argument form for iOS 15 compatibility
             ColorPicker("", selection: $toolbar.color, supportsOpacity: true)
                 .labelsHidden()
                 .frame(width: 28)
