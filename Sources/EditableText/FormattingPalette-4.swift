@@ -30,8 +30,8 @@ private class PassthroughWindow: UIWindow {
 
 // MARK: - Singleton palette manager
 
-final class FormattingPalette {
-    static let shared = FormattingPalette()
+public final class FormattingPalette {
+    public static let shared = FormattingPalette()
     private init() {}
 
     private var paletteWindow: PassthroughWindow?
@@ -39,7 +39,7 @@ final class FormattingPalette {
     private let box = ToolbarBox()
 
     /// Call when an EditableText gains focus.
-    func show(toolbar: Binding<KeyboardToolbar>) {
+    public func show(toolbar: Binding<KeyboardToolbar>) {
         activeID = ObjectIdentifier(toolbar.wrappedValue.textView)
         box.binding = toolbar
         if paletteWindow == nil { buildWindow() }
@@ -50,10 +50,10 @@ final class FormattingPalette {
 
     /// True when the palette window is showing. Used by XYPlot to suppress
     /// PlotSettings presentation when a toolbar button tap passes through.
-    var isVisible: Bool { !(paletteWindow?.isHidden ?? true) }
+    public var isVisible: Bool { !(paletteWindow?.isHidden ?? true) }
 
     /// Call when an EditableText loses focus (unconditional hide).
-    func detach() {
+    public func detach() {
         activeID = nil
         paletteWindow?.isHidden = true
     }
@@ -61,7 +61,7 @@ final class FormattingPalette {
     /// Only hides if no other EditableText has grabbed focus since detach was
     /// scheduled. Compares by the ObjectIdentifier of the RichTextView so a
     /// rapid X->Y focus transfer doesn't flash the palette away.
-    func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {
+    public func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {
         let requestID = ObjectIdentifier(toolbar.wrappedValue.textView)
         guard requestID == activeID else { return }
         detach()
@@ -136,12 +136,13 @@ private struct PaletteView: View {
     }
 }
 
-struct FormattingPaletteContent: View {
-    @Binding var toolbar: KeyboardToolbar
+public struct FormattingPaletteContent: View {
+    @Binding public var toolbar: KeyboardToolbar
+    public init(toolbar: Binding<KeyboardToolbar>) { _toolbar = toolbar }
     private var accessory: KeyboardAccessoryView { KeyboardAccessoryView(toolbar: $toolbar) }
     private let buttonSize: CGFloat = 30
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 3) {
             // Drag handle — drag this to move the palette window
             Image(systemName: "line.3.horizontal")
