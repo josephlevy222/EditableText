@@ -43,59 +43,74 @@ public final class FormattingPalette: NSObject, UIGestureRecognizerDelegate {
             hostingController?.rootView = AnyView(
                 FormattingPaletteContent(toolbar: toolbar)
             )
-            hostingController?.view.isHidden = false
-            // Bring to front in case other views were added since
-            if let v = hostingController?.view {
-                v.superview?.bringSubviewToFront(v)
-            }
+        }
+        // Always bring to front and unhide — may have been covered by a
+        // popover or sheet, or hidden by a previous detach()
+        hostingController?.view.isHidden = false
+        if let v = hostingController?.view {
+            v.superview?.bringSubviewToFront(v)
         }
     }
 
+    /// Called by the close (×) button — resigns first responder so
+    /// the cursor stops blinking and editing ends cleanly.
     public func detach() {
+        activeID = nil
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
+        hostingController?.view.isHidden = true
+    }
+
+    /// Called when an EditableText loses focus naturally (e.g. user taps
+    /// elsewhere). Just hides the palette — do NOT resign first responder
+    /// here because the new first responder is already being set up.
+    public func detachHide() {
         activeID = nil
         hostingController?.view.isHidden = true
     }
 
     public func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {
         guard ObjectIdentifier(toolbar.wrappedValue.textView) == activeID else { return }
-        detach()
+        detachHide()
     }
 
     private func build(toolbar: Binding<KeyboardToolbar>) {
         guard
             let scene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene }).first,
-            let rootVC = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
-                         ?? scene.windows.first?.rootViewController
+                .compactMap({ $0 as? UIWindowScene }).first
         else { return }
+
+        // Find the topmost window that has a rootViewController — prefer
+        // non-alert windows. On macCatalyst isKeyWindow is unreliable
+        // when popovers or sheets are open.
+        let targetWindow = scene.windows
+            .filter { !$0.isHidden && $0.rootViewController != nil }
+            .max(by: { $0.windowLevel.rawValue < $1.windowLevel.rawValue })
+
+        guard let rootVC = targetWindow?.rootViewController else { return }
 
         let paletteSize = CGSize(width: 500, height: 52)
         let windowWidth = rootVC.view.bounds.width
-        let initialCenter = CGPoint(
-            x: windowWidth / 2,
-            y: 100  // below title bar
+        let initialFrame = CGRect(
+            x: (windowWidth - paletteSize.width) / 2,
+            y: 80,  // below title bar in UIKit coords
+            width: paletteSize.width,
+            height: paletteSize.height
         )
 
         let content = FormattingPaletteContent(toolbar: toolbar)
         let host = UIHostingController(rootView: AnyView(content))
         host.view.backgroundColor = .clear
-        host.view.frame = CGRect(
-            x: initialCenter.x - paletteSize.width / 2,
-            y: initialCenter.y - paletteSize.height / 2,
-            width: paletteSize.width,
-            height: paletteSize.height
-        )
+        host.view.frame = initialFrame
 
         // Add as child VC so it participates in the responder chain correctly
         rootVC.addChild(host)
         rootVC.view.addSubview(host.view)
         host.didMove(toParent: rootVC)
-
-        // Ensure it's above everything else
         rootVC.view.bringSubviewToFront(host.view)
 
-        // UIPanGestureRecognizer for dragging — more reliable than SwiftUI
-        // DragGesture in a hosted view because UIKit handles the hit test
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.maximumNumberOfTouches = 1
         pan.delegate = self

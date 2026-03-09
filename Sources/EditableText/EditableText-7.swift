@@ -4,8 +4,7 @@
 //  Created by Joseph Levy on 7/16/24.
 //  Modified 7/28/24
 //  macCatalyst: FormattingPalette (floating UIWindow) handles formatting.
-//  EditableTextInPopover: on macCatalyst opens popover directly on tap
-//  since there is no software keyboard to trigger the popover.
+//  EditableTextInPopover: opens popover directly on tap (no keyboard on Mac).
 //  iOS 15+ compatible: single-argument onChange, no @Observable.
 //
 
@@ -36,9 +35,16 @@ public struct EditableText: View {
 			.onChange(of: focus) { focused in
 #if targetEnvironment(macCatalyst)
 				if focused {
-					FormattingPalette.shared.show(toolbar: $toolbar)
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+						FormattingPalette.shared.show(toolbar: $toolbar)
+					}
 				} else {
-					FormattingPalette.shared.detach()
+					// Delay detach slightly so that tapping from one EditableText
+					// to another doesn't briefly hide the palette between the
+					// outgoing focus=false and incoming focus=true.
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+						FormattingPalette.shared.detachIfNeeded(toolbar: $toolbar)
+					}
 				}
 #endif
 			}
@@ -68,7 +74,6 @@ public struct EditableTextInPopover: View {
 			.onTapGesture {
 				withAnimation {
 #if targetEnvironment(macCatalyst)
-					// No software keyboard on Mac — open the popover directly.
 					edit = true
 #else
 					if keyboardShown { edit = true }
@@ -77,8 +82,6 @@ public struct EditableTextInPopover: View {
 				}
 			}
 #if !targetEnvironment(macCatalyst)
-			// On Mac this hidden RichTextEditor is unnecessary — the popover
-			// contains its own editor and there's no keyboard to wait for.
 			.background {
 				RichTextEditor(attributedText: $text, alignment: $alignment,
 							   toolbar: $toolbar)
@@ -101,9 +104,20 @@ public struct EditableTextInPopover: View {
 						}
 					}
 #if targetEnvironment(macCatalyst)
-					// Wire the palette to the popover's toolbar while it's open.
-					.onAppear { FormattingPalette.shared.show(toolbar: $toolbar) }
-					.onDisappear { FormattingPalette.shared.detach() }
+					.onAppear {
+						// Small delay so RichTextEditor's makeUIView and
+						// becomeFirstResponder complete before show() captures
+						// the toolbar binding — ensures the active text view
+						// is the one the palette operates on.
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+							FormattingPalette.shared.show(toolbar: $toolbar)
+						}
+					}
+					.onDisappear {
+						// Popover closed — hide palette without resigning
+						// (first responder already lost when popover dismissed)
+						FormattingPalette.shared.detachHide()
+					}
 #endif
 			}
 #if !targetEnvironment(macCatalyst)
