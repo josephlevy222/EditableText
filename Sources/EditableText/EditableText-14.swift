@@ -93,7 +93,18 @@ public struct EditableTextInPopover: View {
 					.opacity(0)
 			}
 #endif
-			.popover(isPresented: $edit) {
+			.popover(isPresented: Binding(
+				get: { edit },
+				set: { newValue in
+#if targetEnvironment(macCatalyst)
+					// Don't dismiss the popover if the palette is active —
+					// a toolbar button tap resigns the RichTextView which
+					// causes a SwiftUI re-render that tries to set edit=false.
+					if !newValue && FormattingPalette.shared.isVisible { return }
+#endif
+					edit = newValue
+				}
+			)) {
 				Text(text)
 					.multilineTextAlignment(alignment)
 					.opacity(0)
