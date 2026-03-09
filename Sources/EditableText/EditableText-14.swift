@@ -31,9 +31,9 @@ public struct EditableText: View {
 							   toolbar: $toolbar)
 					.focused($focus)
 					.opacity(focus ? 1 : 0)
-					.allowsHitTesting(focus)
+					//.allowsHitTesting(focus)
 			}
-#if targetEnvironment(macCatalyst)
+#if false //targetEnvironment(macCatalyst)
 			.onChange(of: focus) { focused in
 				if focused {
 					// SwiftUI's .focused() calls becomeFirstResponder but on
@@ -77,6 +77,7 @@ public struct EditableTextInPopover: View {
 			.multilineTextAlignment(alignment)
 			.onTapGesture {
 				withAnimation {
+					focus = true // added back
 #if targetEnvironment(macCatalyst)
 					edit = true
 #else
@@ -100,7 +101,7 @@ public struct EditableTextInPopover: View {
 					// Don't dismiss the popover if the palette is active —
 					// a toolbar button tap resigns the RichTextView which
 					// causes a SwiftUI re-render that tries to set edit=false.
-					if !newValue && FormattingPalette.shared.isVisible { return }
+					if !newValue && FormattingPalette.shared.isVisible { edit = true; return }
 #endif
 					edit = newValue
 				}

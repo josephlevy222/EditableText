@@ -58,9 +58,9 @@ public struct RichTextEditor: UIViewRepresentable {
 		// selection highlights over a .clear background — the selection becomes
 		// invisible and artifacts appear. Use .systemBackground (adaptive
 		// light/dark) so the selection renders correctly.
-		textView.backgroundColor = .systemBackground
+		//textView.backgroundColor = .systemBackground
 #else
-		textView.backgroundColor = .clear
+		//textView.backgroundColor = .clear
 #endif
 		textView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 		textView.typingAttributes[.font] = UIFont.preferredFont(forTextStyle: .body)
@@ -104,7 +104,7 @@ public struct RichTextEditor: UIViewRepresentable {
 class RichTextView: UITextView, ObservableObject {
 	public var accessoryView: KeyboardAccessoryView?
 
-#if targetEnvironment(macCatalyst)
+#if false //targetEnvironment(macCatalyst)
 	override func didMoveToWindow() {
 		super.didMoveToWindow()
 		guard window != nil else { return }
