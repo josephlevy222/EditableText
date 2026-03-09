@@ -690,14 +690,25 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		var color: UIColor { selectedAttributes[.foregroundColor] as? UIColor ?? UIColor.label }
 		var background: UIColor  { selectedAttributes[.backgroundColor] as? UIColor ?? UIColor.systemBackground }
 		
-		// Choose cursor/selection tint that contrasts with the current background.
-		// On dark backgrounds the standard tint becomes invisible, so use white.
-		if let bgColor = parent.textView.typingAttributes[.backgroundColor] as? UIColor,
-		   bgColor.luminance < 0.55 {
-			textView.tintColor = .white
-		} else {
-			textView.tintColor = .tintColor
-		}
+		// Choose cursor/selection tint that contrasts with the effective background.
+		// Resolve in priority order: character background attribute → textView
+		// backgroundColor → system background for current trait collection.
+		// This covers dark mode, explicit dark fill, and no-attribute cases.
+		let effectiveBackground: UIColor = {
+			if let charBG = parent.textView.typingAttributes[.backgroundColor] as? UIColor,
+			   charBG != .clear {
+				return charBG
+			}
+			if let viewBG = parent.textView.backgroundColor, viewBG != .clear {
+				return viewBG
+			}
+			return UIColor.systemBackground
+		}()
+		// Resolve dynamic color against the current trait collection before
+		// checking luminance — otherwise systemBackground always returns the
+		// light-mode value.
+		let resolvedBG = effectiveBackground.resolvedColor(with: textView.traitCollection)
+		textView.tintColor = resolvedBG.luminance < 0.55 ? .white : .tintColor
 		self.parent.alignment = textView.textAlignment.textAlignment
 		DispatchQueue.main.async {
 			guard let toolbar = richTextView?.toolbar else { return }
