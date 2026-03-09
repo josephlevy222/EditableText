@@ -66,7 +66,15 @@ public struct RichTextEditor: UIViewRepresentable {
 	}
 
 	public func updateUIView(_ uiView: UITextView, context: Context) {
-		uiView.textStorage.setAttributedString(attributedText.nsAttributedString())
+		// Never replace textStorage while the view is first responder — doing so
+		// clears the selection and kills the highlight. The user is actively editing;
+		// textViewDidChange keeps attributedText in sync in that direction already.
+		if !uiView.isFirstResponder {
+			let incoming = attributedText.nsAttributedString()
+			if !uiView.attributedText.isEqual(to: incoming) {
+				uiView.textStorage.setAttributedString(incoming)
+			}
+		}
 		uiView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 	}
 
