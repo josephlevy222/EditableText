@@ -690,8 +690,11 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		var color: UIColor { selectedAttributes[.foregroundColor] as? UIColor ?? UIColor.label }
 		var background: UIColor  { selectedAttributes[.backgroundColor] as? UIColor ?? UIColor.systemBackground }
 		
-		if let color = parent.textView.typingAttributes[.backgroundColor] as? UIColor, color.luminance < 0.55 {
-			textView.tintColor =  .cyan
+		// Choose cursor/selection tint that contrasts with the current background.
+		// On dark backgrounds the standard tint becomes invisible, so use white.
+		if let bgColor = parent.textView.typingAttributes[.backgroundColor] as? UIColor,
+		   bgColor.luminance < 0.55 {
+			textView.tintColor = .white
 		} else {
 			textView.tintColor = .tintColor
 		}
@@ -714,7 +717,7 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		}
 	}
 	public func textViewDidEndEditing(_ textView: UITextView) {
-		UITextView.appearance().tintColor = .tintColor
+		textView.tintColor = .tintColor
 		self.parent.alignment = textView.textAlignment.textAlignment
 	}
 
