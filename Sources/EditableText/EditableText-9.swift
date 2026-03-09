@@ -32,6 +32,10 @@ public struct EditableText: View {
 					.focused($focus)
 					.opacity(focus ? 1 : 0)
 					.allowsHitTesting(focus)
+					// Padding gives the UITextView room to render the selection
+					// highlight which macCatalyst clips to the view bounds.
+					// The negative padding counteracts it so layout is unchanged.
+	
 			}
 			.onChange(of: focus) { focused in
 #if targetEnvironment(macCatalyst)

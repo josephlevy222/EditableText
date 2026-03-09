@@ -43,8 +43,17 @@ public struct RichTextEditor: UIViewRepresentable {
 		}()
 		#endif
 
+#if targetEnvironment(macCatalyst)
+		// On macCatalyst the selection highlight is clipped to the UITextView
+		// bounds. A small vertical inset gives it room to render while keeping
+		// the text visually in the same position (compensated in EditableText
+		// with a negative padding).
+		textView.textContainerInset = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+		textView.textContainer.lineFragmentPadding = 0
+#else
 		textView.textContainerInset = UIEdgeInsets.zero
 		textView.textContainer.lineFragmentPadding = 0
+#endif
 		textView.allowsEditingTextAttributes = true
 		textView.delegate = context.coordinator
 		textView.isEditable = true
@@ -105,32 +114,12 @@ class RichTextView: UITextView, ObservableObject {
 	public var accessoryView: KeyboardAccessoryView?
 
 #if targetEnvironment(macCatalyst)
-	// Walk the subview tree to find the underlying NSTextView (a UIView subclass
-	// bridged from AppKit) and set its selectedTextAttributes so the selection
-	// highlight is visible. This must be called after the view enters a window.
-	func applySelectionHighlightColor() {
-		guard let window else { return }
-		// The NSTextView bridge is a direct subview of UITextView on macCatalyst.
-		// It responds to selectedTextAttributes via KVC.
-		for subview in subviews {
-			if subview.responds(to: Selector(("setSelectedTextAttributes:"))) {
-				let highlight = tintColor.withAlphaComponent(0.3)
-				let attrs: NSDictionary = [
-					NSAttributedString.Key.backgroundColor.rawValue: highlight
-				]
-				subview.perform(Selector(("setSelectedTextAttributes:")), with: attrs)
-				return
-			}
-		}
-	}
-
-	override func didMoveToWindow() {
-		super.didMoveToWindow()
-		if window != nil { applySelectionHighlightColor() }
-	}
-
-	override var tintColor: UIColor! {
-		didSet { applySelectionHighlightColor() }
+	// The selection highlight on macCatalyst is clipped to the UITextView frame.
+	// Report a slightly larger intrinsicContentSize so SwiftUI gives us room
+	// for the highlight to render without being clipped.
+	override var intrinsicContentSize: CGSize {
+		let s = super.intrinsicContentSize
+		return CGSize(width: s.width + 8, height: s.height + 4)
 	}
 #endif
 }
