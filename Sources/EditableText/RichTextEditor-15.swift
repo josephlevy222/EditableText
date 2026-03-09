@@ -105,14 +105,17 @@ class RichTextView: UITextView, ObservableObject {
 	public var accessoryView: KeyboardAccessoryView?
 
 #if targetEnvironment(macCatalyst)
-	// The selection highlight on macCatalyst is clipped to the UITextView frame.
-	// Report a slightly larger intrinsicContentSize so SwiftUI gives us room
-	// for the highlight to render without being clipped.
-	override var intrinsicContentSize: CGSize {
-		let s = super.intrinsicContentSize
-		return CGSize(width: s.width + 8, height: s.height + 4)
+	override func didMoveToWindow() {
+		super.didMoveToWindow()
+		guard window != nil else { return }
+		// On macCatalyst the selection highlight is drawn by _UITextLayoutView
+		// but is painted over by _UITextContainerView which sits on top.
+		// Clear the container view's background so the highlight shows through.
+		for subview in subviews {
+			if String(describing: type(of: subview)) == "_UITextContainerView" {
+				subview.backgroundColor = .clear
+			}
+		}
 	}
-
-
 #endif
 }
