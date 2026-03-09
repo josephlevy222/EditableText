@@ -3,15 +3,13 @@
 //
 //  A floating formatting palette for macCatalyst.
 //
-//  Implementation notes:
-//  • Uses a UIWindow at .alert+1 level so it floats above all app content.
-//  • The NSWindow bridge is NOT available on auxiliary UIWindows on macCatalyst —
-//    only the app's root window gets bridged. So we stay in UIKit entirely.
-//  • Dragging is handled by a SwiftUI DragGesture on the drag handle that calls
-//    back to update the UIWindow frame directly — smooth because we bypass the
-//    SwiftUI layout engine for the frame mutation.
-//  • The window is confined to the screen bounds of the app window, which is
-//    normal behaviour for macCatalyst apps that haven't adopted multi-window.
+//  Implementation: adds a UIHostingController as a child of the key window's
+//  root view controller. This avoids all UIWindow hit-test and visibility
+//  issues — the palette view is a normal subview of the main window, just
+//  positioned absolutely and above everything else via zIndex / bringToFront.
+//
+//  Dragging: UIPanGestureRecognizer on the host view (not a SwiftUI gesture)
+//  so UIKit handles hit testing and the gesture fires reliably.
 //
 //  Requires iOS 15+. No @Observable, no two-argument onChange.
 //
@@ -20,102 +18,121 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Passthrough window
-// Transparent areas return nil from hitTest so touches fall through to
-// whatever is underneath — prevents stealing taps from the plot or text views.
-
-private class PassthroughWindow: UIWindow {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        guard let hitView = super.hitTest(point, with: event) else { return nil }
-        // Only swallow touches that land on the bare window or the hosting
-        // controller's root container — not on any actual content subview.
-        // This lets buttons and the drag handle receive touches normally.
-        if hitView == self { return nil }
-        if let rootView = rootViewController?.view, hitView == rootView { return nil }
-        return hitView
-    }
-}
-
 // MARK: - Singleton palette manager
 
-public final class FormattingPalette {
+public final class FormattingPalette: NSObject, UIGestureRecognizerDelegate {
     public static let shared = FormattingPalette()
-    private init() {}
+    private override init() {}
 
-    private var paletteWindow: PassthroughWindow?
     private var hostingController: UIHostingController<AnyView>?
     private var activeID: ObjectIdentifier? = nil
-    // Drag state lives here so it survives rootView replacement in show()
-    fileprivate var dragStartOrigin: CGPoint = .zero
-    fileprivate var isDragging: Bool = false
+    private var panGesture: UIPanGestureRecognizer?
+    private var dragStartCenter: CGPoint = .zero
 
-    public var isVisible: Bool { !(paletteWindow?.isHidden ?? true) }
+    public var isVisible: Bool {
+        guard let hc = hostingController else { return false }
+        return !hc.view.isHidden
+    }
 
     public func show(toolbar: Binding<KeyboardToolbar>) {
         activeID = ObjectIdentifier(toolbar.wrappedValue.textView)
-        if paletteWindow == nil {
-            buildWindow(toolbar: toolbar)
+
+        if hostingController == nil {
+            build(toolbar: toolbar)
         } else {
-            // Directly replace rootView — the only reliable way to update a
-            // UIHostingController in a separate UIWindow outside the main
-            // SwiftUI update cycle.
             hostingController?.rootView = AnyView(
-                FormattingPaletteContent(toolbar: toolbar, onDrag: { [weak self] in
-                    self?.paletteWindow?.frame
-                }, setFrame: { [weak self] frame in
-                    self?.paletteWindow?.frame = frame
-                })
+                FormattingPaletteContent(toolbar: toolbar)
             )
+            hostingController?.view.isHidden = false
+            // Bring to front in case other views were added since
+            if let v = hostingController?.view {
+                v.superview?.bringSubviewToFront(v)
+            }
         }
-        paletteWindow?.isHidden = false
     }
 
     public func detach() {
         activeID = nil
-        paletteWindow?.isHidden = true
+        hostingController?.view.isHidden = true
     }
 
     public func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {
-        let requestID = ObjectIdentifier(toolbar.wrappedValue.textView)
-        guard requestID == activeID else { return }
+        guard ObjectIdentifier(toolbar.wrappedValue.textView) == activeID else { return }
         detach()
     }
 
-    private func buildWindow(toolbar: Binding<KeyboardToolbar>) {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene }).first else { return }
+    private func build(toolbar: Binding<KeyboardToolbar>) {
+        guard
+            let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first,
+            let rootVC = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                         ?? scene.windows.first?.rootViewController
+        else { return }
 
         let paletteSize = CGSize(width: 500, height: 52)
-
-        // Position near top-centre of the app window
-        let screenBounds = scene.screen.bounds
-        let initialOrigin = CGPoint(
-            x: (screenBounds.width - paletteSize.width) / 2,
-            y: 80  // below menu bar + title bar in UIKit coords (y=0 at top)
+        let windowWidth = rootVC.view.bounds.width
+        let initialCenter = CGPoint(
+            x: windowWidth / 2,
+            y: 100  // below title bar
         )
-        let initialFrame = CGRect(origin: initialOrigin, size: paletteSize)
 
-        let window = PassthroughWindow(windowScene: scene)
-        // Use a very high window level so we're above everything in the app
-        window.windowLevel = UIWindow.Level(rawValue: UIWindow.Level.alert.rawValue + 100)
-        window.backgroundColor = .clear
-        window.frame = initialFrame
-
-        let content = FormattingPaletteContent(
-            toolbar: toolbar,
-            onDrag: { window.frame },
-            setFrame: { window.frame = $0 }
-        )
+        let content = FormattingPaletteContent(toolbar: toolbar)
         let host = UIHostingController(rootView: AnyView(content))
         host.view.backgroundColor = .clear
-        host.view.frame = CGRect(origin: .zero, size: paletteSize)
-        host.view.isUserInteractionEnabled = true
-        window.rootViewController = host
-        window.isUserInteractionEnabled = true
-        window.isHidden = false
+        host.view.frame = CGRect(
+            x: initialCenter.x - paletteSize.width / 2,
+            y: initialCenter.y - paletteSize.height / 2,
+            width: paletteSize.width,
+            height: paletteSize.height
+        )
+
+        // Add as child VC so it participates in the responder chain correctly
+        rootVC.addChild(host)
+        rootVC.view.addSubview(host.view)
+        host.didMove(toParent: rootVC)
+
+        // Ensure it's above everything else
+        rootVC.view.bringSubviewToFront(host.view)
+
+        // UIPanGestureRecognizer for dragging — more reliable than SwiftUI
+        // DragGesture in a hosted view because UIKit handles the hit test
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        pan.maximumNumberOfTouches = 1
+        pan.delegate = self
+        host.view.addGestureRecognizer(pan)
+        self.panGesture = pan
 
         self.hostingController = host
-        self.paletteWindow = window
+    }
+
+    @objc private func handlePan(_ gr: UIPanGestureRecognizer) {
+        guard let view = gr.view else { return }
+        switch gr.state {
+        case .began:
+            dragStartCenter = view.center
+        case .changed:
+            let t = gr.translation(in: view.superview)
+            view.center = CGPoint(
+                x: dragStartCenter.x + t.x,
+                y: dragStartCenter.y + t.y
+            )
+        default:
+            break
+        }
+    }
+
+    // Only begin the pan when the touch starts in the leading ~60pt drag handle area.
+    // This lets button taps in the rest of the palette fire without competing.
+    public func gestureRecognizerShouldBegin(_ gr: UIGestureRecognizer) -> Bool {
+        guard let view = gr.view else { return false }
+        let location = gr.location(in: view)
+        return location.x < 60
+    }
+
+    // Allow pan to coexist with SwiftUI internal gesture recognizers
+    public func gestureRecognizer(_ gr: UIGestureRecognizer,
+                                  shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        return false
     }
 }
 
@@ -123,17 +140,9 @@ public final class FormattingPalette {
 
 public struct FormattingPaletteContent: View {
     @Binding public var toolbar: KeyboardToolbar
-    // Callbacks into FormattingPalette to read/write UIWindow.frame directly.
-    // Using closures rather than a shared reference keeps the view value-typed.
-    let onDrag: () -> CGRect?
-    let setFrame: (CGRect) -> Void
 
-    public init(toolbar: Binding<KeyboardToolbar>,
-                onDrag: @escaping () -> CGRect?,
-                setFrame: @escaping (CGRect) -> Void) {
+    public init(toolbar: Binding<KeyboardToolbar>) {
         _toolbar = toolbar
-        self.onDrag = onDrag
-        self.setFrame = setFrame
     }
 
     private var accessory: KeyboardAccessoryView { KeyboardAccessoryView(toolbar: $toolbar) }
@@ -142,31 +151,12 @@ public struct FormattingPaletteContent: View {
     public var body: some View {
         HStack(spacing: 3) {
 
-            // ── Drag handle ───────────────────────────────────────────────
+            // Drag handle — visual affordance; the pan gesture on the whole
+            // view handles actual dragging so this is decoration only
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
                 .padding(.leading, 8)
                 .padding(.trailing, 4)
-                .frame(width: 28, height: 44)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
-                        .onChanged { value in
-                            let palette = FormattingPalette.shared
-                            if !palette.isDragging {
-                                palette.isDragging = true
-                                palette.dragStartOrigin = onDrag()?.origin ?? .zero
-                            }
-                            let newOrigin = CGPoint(
-                                x: palette.dragStartOrigin.x + value.translation.width,
-                                y: palette.dragStartOrigin.y + value.translation.height
-                            )
-                            if let current = onDrag() {
-                                setFrame(CGRect(origin: newOrigin, size: current.size))
-                            }
-                        }
-                        .onEnded { _ in FormattingPalette.shared.isDragging = false }
-                )
 
             Divider().frame(height: 20).padding(.horizontal, 2)
 
@@ -238,6 +228,9 @@ public struct FormattingPaletteContent: View {
             RoundedRectangle(cornerRadius: 10)
                 .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
         )
+        // Prevent the pan gesture on the host view from cancelling
+        // SwiftUI button taps — buttons get priority
+        .allowsHitTesting(true)
     }
 
     private func toolbarButton(_ systemImage: String, highlighted: Bool,
