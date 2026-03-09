@@ -43,17 +43,8 @@ public struct RichTextEditor: UIViewRepresentable {
 		}()
 		#endif
 
-#if targetEnvironment(macCatalyst)
-		// On macCatalyst the selection highlight is clipped to the UITextView
-		// bounds. A small vertical inset gives it room to render while keeping
-		// the text visually in the same position (compensated in EditableText
-		// with a negative padding).
-		textView.textContainerInset = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
-		textView.textContainer.lineFragmentPadding = 0
-#else
 		textView.textContainerInset = UIEdgeInsets.zero
 		textView.textContainer.lineFragmentPadding = 0
-#endif
 		textView.allowsEditingTextAttributes = true
 		textView.delegate = context.coordinator
 		textView.isEditable = true

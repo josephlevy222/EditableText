@@ -36,6 +36,12 @@ public struct EditableText: View {
 #if targetEnvironment(macCatalyst)
 			.onChange(of: focus) { focused in
 				if focused {
+					// SwiftUI's .focused() calls becomeFirstResponder but on
+					// macCatalyst something in the focus cycle resigns it before
+					// the selection highlight appears. Re-assert after a tick.
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+						if focus { toolbar.textView.becomeFirstResponder() }
+					}
 					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 						FormattingPalette.shared.show(toolbar: $toolbar)
 					}
