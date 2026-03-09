@@ -708,7 +708,9 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		// checking luminance — otherwise systemBackground always returns the
 		// light-mode value.
 		let resolvedBG = effectiveBackground.resolvedColor(with: textView.traitCollection)
-		textView.tintColor = resolvedBG.luminance < 0.55 ? .white : .tintColor
+		// Use concrete colors — .tintColor is dynamic and on macCatalyst can
+		// resolve to something that doesn't render visibly as a cursor.
+		textView.tintColor = resolvedBG.luminance < 0.55 ? .white : .label
 		self.parent.alignment = textView.textAlignment.textAlignment
 		DispatchQueue.main.async {
 			guard let toolbar = richTextView?.toolbar else { return }
@@ -728,7 +730,7 @@ extension RichTextEditor.Coordinator : UIImagePickerControllerDelegate, UINaviga
 		}
 	}
 	public func textViewDidEndEditing(_ textView: UITextView) {
-		textView.tintColor = .tintColor
+		textView.tintColor = .label
 		self.parent.alignment = textView.textAlignment.textAlignment
 	}
 

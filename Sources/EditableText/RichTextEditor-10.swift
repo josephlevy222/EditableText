@@ -52,7 +52,7 @@ public struct RichTextEditor: UIViewRepresentable {
 		textView.isScrollEnabled = false
 		textView.contentInsetAdjustmentBehavior = .never
 		textView.textColor = .label
-		textView.tintColor = .red  // DIAGNOSTIC: remove after confirming selection color
+		textView.tintColor = .label
 #if targetEnvironment(macCatalyst)
 		// On macCatalyst, UITextView bridges to NSTextView which cannot draw
 		// selection highlights over a .clear background — the selection becomes
@@ -103,4 +103,34 @@ public struct RichTextEditor: UIViewRepresentable {
 
 class RichTextView: UITextView, ObservableObject {
 	public var accessoryView: KeyboardAccessoryView?
+
+#if targetEnvironment(macCatalyst)
+	// Walk the subview tree to find the underlying NSTextView (a UIView subclass
+	// bridged from AppKit) and set its selectedTextAttributes so the selection
+	// highlight is visible. This must be called after the view enters a window.
+	func applySelectionHighlightColor() {
+		guard let window else { return }
+		// The NSTextView bridge is a direct subview of UITextView on macCatalyst.
+		// It responds to selectedTextAttributes via KVC.
+		for subview in subviews {
+			if subview.responds(to: Selector(("setSelectedTextAttributes:"))) {
+				let highlight = tintColor.withAlphaComponent(0.3)
+				let attrs: NSDictionary = [
+					NSAttributedString.Key.backgroundColor.rawValue: highlight
+				]
+				subview.perform(Selector(("setSelectedTextAttributes:")), with: attrs)
+				return
+			}
+		}
+	}
+
+	override func didMoveToWindow() {
+		super.didMoveToWindow()
+		if window != nil { applySelectionHighlightColor() }
+	}
+
+	override var tintColor: UIColor! {
+		didSet { applySelectionHighlightColor() }
+	}
+#endif
 }
