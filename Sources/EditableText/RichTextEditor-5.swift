@@ -76,15 +76,6 @@ public struct RichTextEditor: UIViewRepresentable {
 			parent.alignment = textView.textAlignment.textAlignment
 		}
 
-		/// Forward selection changes to KeyboardAccessoryView's coordinator so it
-		/// can update toolbar state (font size, bold, italic, etc.) on all platforms
-		/// including macCatalyst where there is no keyboard accessory bar.
-		public func textViewDidChangeSelection(_ textView: UITextView) {
-			guard let richTextView = textView as? RichTextView,
-				  let accessoryCoordinator = richTextView.accessoryView?.coordinator
-			else { return }
-			accessoryCoordinator.textViewDidChangeSelection(textView)
-		}
 	}
 }
 
