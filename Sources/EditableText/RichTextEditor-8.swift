@@ -48,7 +48,11 @@ public struct RichTextEditor: UIViewRepresentable {
 		textView.allowsEditingTextAttributes = true
 		textView.delegate = context.coordinator
 		textView.isEditable = true
+		textView.isSelectable = true
+		textView.isScrollEnabled = false
+		textView.contentInsetAdjustmentBehavior = .never
 		textView.textColor = .label
+		textView.tintColor = .tintColor
 #if targetEnvironment(macCatalyst)
 		// On macCatalyst, UITextView bridges to NSTextView which cannot draw
 		// selection highlights over a .clear background — the selection becomes
