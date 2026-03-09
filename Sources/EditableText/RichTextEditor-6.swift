@@ -25,12 +25,14 @@ public struct RichTextEditor: UIViewRepresentable {
 	var textView: RichTextView { toolbar.textView }
 
 	public func makeUIView(context: Context) -> UITextView {
-		// Always create accessoryView so richTextView?.toolbar resolves on all
-		// platforms — KeyboardAccessoryView.textViewDidChangeSelection needs it
-		// to push font/bold/italic state back into the toolbar binding.
+		// Always set accessoryView (our custom property) so richTextView?.toolbar
+		// resolves on all platforms — textViewDidChangeSelection needs it to push
+		// font/bold/italic state back into the toolbar binding.
 		textView.accessoryView = KeyboardAccessoryView(toolbar: $toolbar)
 		#if !targetEnvironment(macCatalyst)
-		// On iOS wire up the input accessory bar above the keyboard.
+		// On iOS only: wire up the formatting bar above the software keyboard.
+		// Do NOT do this on macCatalyst — there is no software keyboard, and
+		// attaching inputAccessoryView interferes with NumericTextField focus.
 		let accessoryViewController = UIHostingController(rootView: textView.accessoryView!)
 		textView.inputAccessoryView = {
 			let accessoryView = accessoryViewController.view
@@ -47,7 +49,15 @@ public struct RichTextEditor: UIViewRepresentable {
 		textView.delegate = context.coordinator
 		textView.isEditable = true
 		textView.textColor = .label
+#if targetEnvironment(macCatalyst)
+		// On macCatalyst, UITextView bridges to NSTextView which cannot draw
+		// selection highlights over a .clear background — the selection becomes
+		// invisible and artifacts appear. Use .systemBackground (adaptive
+		// light/dark) so the selection renders correctly.
+		textView.backgroundColor = .systemBackground
+#else
 		textView.backgroundColor = .clear
+#endif
 		textView.textAlignment = switch alignment {case .leading: .left; case .center: .center; case .trailing: .right}
 		textView.typingAttributes[.font] = UIFont.preferredFont(forTextStyle: .body)
 		DispatchQueue.main.async { attributedText = attributedText.nsAttributedString().attributedStringFromUIKit }
