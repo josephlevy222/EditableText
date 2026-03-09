@@ -34,6 +34,14 @@ public final class FormattingPalette: NSObject, UIGestureRecognizerDelegate {
         return !hc.view.isHidden
     }
 
+    /// Returns true if the given point (in the window's coordinate space)
+    /// falls within the palette view. Use this instead of isVisible for
+    /// tap filtering — isVisible is true even when the tap is beside the palette.
+    public func contains(windowPoint point: CGPoint) -> Bool {
+        guard let view = hostingController?.view, !view.isHidden else { return false }
+        return view.frame.contains(point)
+    }
+
     public func show(toolbar: Binding<KeyboardToolbar>) {
         activeID = ObjectIdentifier(toolbar.wrappedValue.textView)
 
