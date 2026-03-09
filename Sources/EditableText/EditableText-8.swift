@@ -31,17 +31,25 @@ public struct EditableText: View {
 							   toolbar: $toolbar)
 					.focused($focus)
 					.opacity(focus ? 1 : 0)
+					.allowsHitTesting(focus)
 			}
 			.onChange(of: focus) { focused in
 #if targetEnvironment(macCatalyst)
 				if focused {
+					// On macCatalyst .focused() doesn't reliably call
+					// becomeFirstResponder when the view transitions from
+					// opacity 0→1. Drive it explicitly so UIKit shows the
+					// selection highlight.
+					DispatchQueue.main.async {
+						toolbar.textView.becomeFirstResponder()
+					}
 					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 						FormattingPalette.shared.show(toolbar: $toolbar)
 					}
 				} else {
-					// Delay detach slightly so that tapping from one EditableText
-					// to another doesn't briefly hide the palette between the
-					// outgoing focus=false and incoming focus=true.
+					// Explicitly resign so UIKit stops blinking the cursor
+					// in the now-invisible view.
+					toolbar.textView.resignFirstResponder()
 					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 						FormattingPalette.shared.detachIfNeeded(toolbar: $toolbar)
 					}
