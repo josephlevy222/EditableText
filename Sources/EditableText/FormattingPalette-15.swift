@@ -52,23 +52,16 @@ public final class FormattingPalette: NSObject, UIGestureRecognizerDelegate {
         }
     }
 
-    /// Called by the close (×) button — resigns first responder so
-    /// the cursor stops blinking and editing ends cleanly.
+    /// Hide the palette. Does NOT resign first responder — the user may
+    /// still be editing. Tapping outside the text view ends editing normally.
     public func detach() {
         activeID = nil
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil, from: nil, for: nil
-        )
         hostingController?.view.isHidden = true
     }
 
-    /// Called when an EditableText loses focus naturally (e.g. user taps
-    /// elsewhere). Just hides the palette — do NOT resign first responder
-    /// here because the new first responder is already being set up.
+    /// Same as detach() — alias used by focus-loss and popover-disappear paths.
     public func detachHide() {
-        activeID = nil
-        hostingController?.view.isHidden = true
+        detach()
     }
 
     public func detachIfNeeded(toolbar: Binding<KeyboardToolbar>) {

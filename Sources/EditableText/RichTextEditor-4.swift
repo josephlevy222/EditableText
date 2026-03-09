@@ -25,12 +25,12 @@ public struct RichTextEditor: UIViewRepresentable {
 	var textView: RichTextView { toolbar.textView }
 
 	public func makeUIView(context: Context) -> UITextView {
-		// On macCatalyst there is no software keyboard.
-		// Leave accessoryView nil — CustomizePopoverMenus toggle* overrides
-		// will fall through to super, which is correct Mac behaviour.
-		// MacFormattingToolbar in EditableText handles formatting via the shared toolbar.
-		#if !targetEnvironment(macCatalyst)
+		// Always create accessoryView so richTextView?.toolbar resolves on all
+		// platforms — KeyboardAccessoryView.textViewDidChangeSelection needs it
+		// to push font/bold/italic state back into the toolbar binding.
 		textView.accessoryView = KeyboardAccessoryView(toolbar: $toolbar)
+		#if !targetEnvironment(macCatalyst)
+		// On iOS wire up the input accessory bar above the keyboard.
 		let accessoryViewController = UIHostingController(rootView: textView.accessoryView!)
 		textView.inputAccessoryView = {
 			let accessoryView = accessoryViewController.view
@@ -74,6 +74,16 @@ public struct RichTextEditor: UIViewRepresentable {
 		public func textViewDidChange(_ textView: UITextView) {
 			parent.attributedText = textView.attributedText.attributedStringFromUIKit
 			parent.alignment = textView.textAlignment.textAlignment
+		}
+
+		/// Forward selection changes to KeyboardAccessoryView's coordinator so it
+		/// can update toolbar state (font size, bold, italic, etc.) on all platforms
+		/// including macCatalyst where there is no keyboard accessory bar.
+		public func textViewDidChangeSelection(_ textView: UITextView) {
+			guard let richTextView = textView as? RichTextView,
+				  let accessoryCoordinator = richTextView.accessoryView?.coordinator
+			else { return }
+			accessoryCoordinator.textViewDidChangeSelection(textView)
 		}
 	}
 }
