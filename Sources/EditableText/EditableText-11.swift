@@ -25,6 +25,7 @@ public struct EditableText: View {
 		Text(text)
 			.multilineTextAlignment(alignment)
 			.opacity(focus ? 0 : 1)
+			.contentShape(Rectangle())
 			.onTapGesture { focus = true }
 			.overlay {
 				RichTextEditor(attributedText: $text, alignment: $alignment,
