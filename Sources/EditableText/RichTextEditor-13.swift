@@ -122,12 +122,6 @@ class RichTextView: UITextView, ObservableObject {
 		return CGSize(width: s.width + 8, height: s.height + 4)
 	}
 
-	// DIAGNOSTIC
-	override func layoutSubviews() {
-		super.layoutSubviews()
-		print("RichTextView subviews: \(subviews.map { type(of: $0) })")
-		print("RichTextView frame: \(frame), isFirstResponder: \(isFirstResponder)")
-		print("RichTextView selectedRange: \(selectedRange), tintColor: \(String(describing: tintColor))")
-	}
+
 #endif
 }

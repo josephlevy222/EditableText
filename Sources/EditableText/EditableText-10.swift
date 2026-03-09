@@ -29,21 +29,18 @@ public struct EditableText: View {
 			.overlay {
 				RichTextEditor(attributedText: $text, alignment: $alignment,
 							   toolbar: $toolbar)
+#if !targetEnvironment(macCatalyst)
 					.focused($focus)
+#endif
 					.opacity(focus ? 1 : 0)
 					.allowsHitTesting(focus)
-					// Padding gives the UITextView room to render the selection
-					// highlight which macCatalyst clips to the view bounds.
-					// The negative padding counteracts it so layout is unchanged.
-	
 			}
 			.onChange(of: focus) { focused in
 #if targetEnvironment(macCatalyst)
 				if focused {
-					// On macCatalyst .focused() doesn't reliably call
-					// becomeFirstResponder when the view transitions from
-					// opacity 0→1. Drive it explicitly so UIKit shows the
-					// selection highlight.
+					// On macCatalyst don't use .focused() — SwiftUI's focus
+					// system calls resignFirstResponder immediately after the
+					// selection is made, fighting UIKit. Drive focus directly.
 					DispatchQueue.main.async {
 						toolbar.textView.becomeFirstResponder()
 					}
@@ -51,9 +48,11 @@ public struct EditableText: View {
 						FormattingPalette.shared.show(toolbar: $toolbar)
 					}
 				} else {
-					// Explicitly resign so UIKit stops blinking the cursor
-					// in the now-invisible view.
-					toolbar.textView.resignFirstResponder()
+					// Only resign if we are still first responder — UIKit may
+					// have already moved focus to another view.
+					if toolbar.textView.isFirstResponder {
+						toolbar.textView.resignFirstResponder()
+					}
 					DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 						FormattingPalette.shared.detachIfNeeded(toolbar: $toolbar)
 					}
