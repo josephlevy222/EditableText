@@ -52,7 +52,7 @@ public struct RichTextEditor: UIViewRepresentable {
 		textView.isScrollEnabled = false
 		textView.contentInsetAdjustmentBehavior = .never
 		textView.textColor = .label
-		textView.tintColor = .tintColor
+		textView.tintColor = .red  // DIAGNOSTIC: remove after confirming selection color
 #if targetEnvironment(macCatalyst)
 		// On macCatalyst, UITextView bridges to NSTextView which cannot draw
 		// selection highlights over a .clear background — the selection becomes
