@@ -11,7 +11,7 @@ A toolbar for iOS/iPadOS is attached to the keyboard using the UITextView's inpu
 	//
 
 	import SwiftUI
-	import RichTextEditor
+	import EditableText
 	struct ContentView: View {
 		@State var text = AttributedString("Hello World!\nThis is the second line and its long.\nThis is a third line.")
 	
