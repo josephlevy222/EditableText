@@ -223,10 +223,21 @@ fileprivate extension SwiftUI.Font {
 	}
 }
 
-/// Conversion code for SwiftUI.Font to UIFont in AttributedString to NSAttributedString and vica versa starts here
+// MARK: - NSAttributedString ↔ AttributedString helpers
+
+/// Conversion code for SwiftUI.Font to UIFont in AttributedString to NSAttributedString and vice versa starts here
 extension NSAttributedString {
 	public var attributedStringFromUIKit : AttributedString {
 		(try? AttributedString(self, including: \.uiKit)) ?? AttributedString(self)
+	}
+	
+	convenience init(_ attributed: AttributedString) {
+		do {
+			let ns = try NSAttributedString(attributed, including: \.uiKit)
+			self.init(attributedString: ns)
+		} catch {
+			self.init(string: String(attributed.characters))
+		}
 	}
 	
 	public func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
@@ -280,6 +291,13 @@ public extension AttributeContainer {
 }
 
 extension AttributedString {
+	/// Creates an AttributedString from a plain String with an explicit SwiftUI font.
+	/// Defaults to .body so text always has a well-defined size from the start.
+	public init(_ string: String, font: Font = .body) {
+		self.init(stringLiteral: string)
+		self.uiKit.font = UIFont(font: font)  // uses LNFontUtils UIFont(font:) init
+	}
+	
 	public func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
 		//		let nsAttributedString = NSMutableAttributedString(t)
 		//		for run in runs {
@@ -291,6 +309,15 @@ extension AttributedString {
 		return runs.reduce(into: NSMutableAttributedString()) {
 			$0.append(NSAttributedString(AttributedString(self[$1.range]).settingAttributes($1.attributes.swiftUIToUIKit())))
 		}
+	}
+	
+	init(_ ns: NSAttributedString) {
+		self = ns.attributedStringFromUIKit
+//		do {
+//			self = try AttributedString(ns, including: \.uiKit)
+//		} catch {
+//			self = AttributedString(stringLiteral: ns.string)
+//		}
 	}
 	
 	public func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
@@ -369,7 +396,7 @@ extension AttributedString {
 extension String {
 	public func markdownToAttributed() -> AttributedString {
 		do { return try AttributedString(styledMarkdown: self) }
-		catch { return AttributedString("Error parsing markdown \(error)") }
+		catch { return AttributedString(stringLiteral: "Error parsing markdown \(error)") }
 	}
 }
 
