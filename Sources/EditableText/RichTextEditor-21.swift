@@ -166,10 +166,13 @@ public struct RichTextEditor: UIViewRepresentable {
 				print("In hack")
 				let savedRange = uiView.selectedRange
 				uiView.selectedRange = NSRange(location: savedRange.location, length: 0)
+				CATransaction.begin()
+				CATransaction.setDisableActions(true)
 				uiView.undoManager?.disableUndoRegistration()
 				uiView.insertText(" ")
 				uiView.deleteBackward()
 				uiView.undoManager?.enableUndoRegistration()
+				CATransaction.commit()
 				uiView.selectedRange = savedRange
 			}
 		}
@@ -202,12 +205,14 @@ public struct RichTextEditor: UIViewRepresentable {
         }
 
         public func textViewDidBeginEditing(_ textView: UITextView) {
-            textView.textAlignment = switch self.parent.alignment {
-                case .leading: .left; case .center: .center; case .trailing: .right
-            }
-            textView.contentOffset = .zero
-            textView.invalidateIntrinsicContentSize()
-			parent.forceCatalystLayout(to: textView)
+			DispatchQueue.main.async {
+				textView.textAlignment = switch self.parent.alignment {
+				case .leading: .left; case .center: .center; case .trailing: .right
+				}
+				textView.contentOffset = .zero
+				textView.invalidateIntrinsicContentSize()
+				self.parent.forceCatalystLayout(to: textView)
+			}
         }
     }
 }
