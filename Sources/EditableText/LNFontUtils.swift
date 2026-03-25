@@ -291,42 +291,29 @@ public extension AttributeContainer {
 }
 
 extension AttributedString {
-	/// Creates an AttributedString from a plain String with an explicit SwiftUI font.
-	/// Defaults to .body so text always has a well-defined size from the start.
-	public init(_ string: String, font: Font = .body) {
+	/// Creates an AttributedString from a plain String with an explicit SwiftUI font. No default to avoid conflict with AttributedString(_ : , attributes:)
+	public init(_ string: String, font: Font) { 
 		self.init(stringLiteral: string)
+		self.font = font
 		self.uiKit.font = UIFont(font: font)  // uses LNFontUtils UIFont(font:) init
 	}
 	
 	public func nsAttributedString(with traitCollection: UITraitCollection = .current) -> NSMutableAttributedString {
-		//		let nsAttributedString = NSMutableAttributedString(t)
-		//		for run in runs {
-		//			let attributes = run.attributes.swiftUIToUIKit()
-		//			let nsText = NSAttributedString(AttributedString(self[run.range]).settingAttributes(attributes))
-		//			nsAttributedString.append(nsText)
-		//		}
-		//		return nsAttributedString
-		return runs.reduce(into: NSMutableAttributedString()) {
+		runs.reduce(into: NSMutableAttributedString()) {
 			$0.append(NSAttributedString(AttributedString(self[$1.range]).settingAttributes($1.attributes.swiftUIToUIKit())))
 		}
 	}
 	
 	init(_ ns: NSAttributedString) {
 		self = ns.attributedStringFromUIKit
-//		do {
-//			self = try AttributedString(ns, including: \.uiKit)
-//		} catch {
-//			self = AttributedString(stringLiteral: ns.string)
-//		}
 	}
 	
 	public func calculateSize(maxWidth: CGFloat = .greatestFiniteMagnitude) -> CGSize {
 		return self.nsAttributedString().calculateSize(maxWidth: maxWidth)
 	}
 	
-	/// AttributedString(styledMarkdown: String, fonts: [Font]) puts fonts into Headers 1-6 shown in list
-	/// and setFont for SwiftUI.Font, along with setBold, and setItalic that work with SwiftUI.Font and UIFont
-	/// embedded in the attributed string
+	/// AttributedString(styledMarkdown: String, fonts: [Font]) puts fonts into Headers 1-6 shown in list and setFont for SwiftUI.Font, along with setBold, and setItalic
+	/// that work with SwiftUI.Font and UIFont embedded in the attributed string
 	public init(styledMarkdown markdownString: String,//Header0,     1,        2,     3,      4,      5,        6
 				fontStyles: [Font.TextStyle]      =      [.body,.largeTitle,.title,.title2,.title3,.headline,.subheadline],
 				insertCR: Bool = true) throws {
