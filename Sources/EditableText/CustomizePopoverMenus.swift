@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 extension RichTextView {
 

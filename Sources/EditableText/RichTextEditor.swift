@@ -14,6 +14,7 @@
 //
 
 import SwiftUI
+import Utilities
 
 public struct RichTextEditor: UIViewRepresentable {
     public init(attributedText: Binding<AttributedString>,

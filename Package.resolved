@@ -1,0 +1,15 @@
+{
+  "originHash" : "2da27eb957e887d7b6e26357bb14aab0e4dbc357c15c507e9b450298da071e33",
+  "pins" : [
+    {
+      "identity" : "utilities",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/josephlevy222/Utilities.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "770c059056d843008859440a0730a0d19b4330d1"
+      }
+    }
+  ],
+  "version" : 3
+}
