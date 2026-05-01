@@ -16,17 +16,17 @@ struct KeyboardScrollModifier: ViewModifier {
 				ScrollView {
 					content
 						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-						.padding(.bottom, keyboardHeight) // Keep your original padding logic
+						.padding(.bottom, 20) // Keep your original padding logic
 				}
 				.onChange(of: keyboardHeight) { newHeight in
 					if newHeight > 0, let id = registry.activeID {
 						// A slightly longer delay helps ensure the swap from Text to
 						// RichTextEditor is complete so the ID is attached to the new view.
-						DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								// Using .top is more predictable than .center when
 								// the bottom half of the screen is "invisible."
-								proxy.scrollTo(id, anchor: .top)
+								proxy.scrollTo(id, anchor: .bottom)
 							}
 						}
 					}
@@ -37,7 +37,7 @@ struct KeyboardScrollModifier: ViewModifier {
 		// Notification listeners
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-				keyboardHeight = frame.cgRectValue.height + 60
+				keyboardHeight = frame.cgRectValue.height //+ 60
 			}
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
