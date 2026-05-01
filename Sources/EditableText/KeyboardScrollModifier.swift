@@ -26,7 +26,7 @@ struct KeyboardScrollModifier: ViewModifier {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								// Using .top is more predictable than .center when
 								// the bottom half of the screen is "invisible."
-								proxy.scrollTo(id, anchor: .bottom)
+								proxy.scrollTo(id, anchor: .center)
 							}
 						}
 					}
