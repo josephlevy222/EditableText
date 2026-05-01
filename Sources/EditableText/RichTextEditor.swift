@@ -203,7 +203,13 @@ public struct RichTextEditor: UIViewRepresentable {
 
         public func textViewDidEndEditing(_ textView: UITextView) {
             parent.alignment = textView.textAlignment.textAlignment
-        }
+			DispatchQueue.main.async {
+				if FieldRegistry.shared.activeID != nil {
+					FieldRegistry.shared.activeID = nil
+					print("UIKit Delegate: Registry wiped successfully.")
+				}
+			}
+		}
 
         public func textViewDidBeginEditing(_ textView: UITextView) {
 			DispatchQueue.main.async {
