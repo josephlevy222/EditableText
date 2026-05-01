@@ -16,7 +16,7 @@ struct KeyboardScrollModifier: ViewModifier {
 				ScrollView {
 					content
 						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-						.padding(.bottom, 20) // Keep your original padding logic
+						.padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 20) // Keep your original padding logic
 				}
 				.onChange(of: keyboardHeight) { newHeight in
 					if newHeight > 0, let id = registry.activeID {
