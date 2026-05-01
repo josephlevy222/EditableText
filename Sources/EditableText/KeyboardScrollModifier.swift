@@ -34,7 +34,7 @@ struct KeyboardScrollModifier: ViewModifier {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								// Using .top is more predictable than .center when
 								// the bottom half of the screen is "invisible."
-								proxy.scrollTo(id, anchor: .bottom)
+								proxy.scrollTo(id, anchor: .top)
 							}
 						}
 					}
@@ -45,7 +45,7 @@ struct KeyboardScrollModifier: ViewModifier {
 		// Notification listeners
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-				keyboardHeight = frame.cgRectValue.height + 60
+				keyboardHeight = frame.cgRectValue.height //+ 60
 			}
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
@@ -78,12 +78,12 @@ struct KeyboardFieldModifier: ViewModifier {
 			.id(id)              // Anchors the view for ScrollViewReader
 			.onChange(of: isFocused) { focus in
 				print("EditableText Focus Changed: \(isFocused)")
-				if isFocused {
-					FieldRegistry.shared.activeID = id
+				if focus {
+					registry.activeID = id
 				} else {
-					if FieldRegistry.shared.activeID == id {
+					if registry.activeID == id {
 						print("Successfully nilled out the registry!")
-						FieldRegistry.shared.activeID = nil
+						registry.activeID = nil
 					}
 				}
 			}
