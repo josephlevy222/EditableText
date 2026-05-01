@@ -34,7 +34,7 @@ struct KeyboardScrollModifier: ViewModifier {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								// Using .top is more predictable than .center when
 								// the bottom half of the screen is "invisible."
-								proxy.scrollTo(id, anchor: .top)
+								proxy.scrollTo(id, anchor: .bottom)
 							}
 						}
 					}
@@ -45,7 +45,7 @@ struct KeyboardScrollModifier: ViewModifier {
 		// Notification listeners
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-				keyboardHeight = frame.cgRectValue.height
+				keyboardHeight = frame.cgRectValue.height + 60
 			}
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
@@ -76,13 +76,15 @@ struct KeyboardFieldModifier: ViewModifier {
 		content
 			.focused($isFocused) // Syncs with native keyboard focus
 			.id(id)              // Anchors the view for ScrollViewReader
-			.onChange(of: isFocused) { focused in
-				if focused {
-					registry.activeID = id
+			.onChange(of: isFocused) { focus in
+				print("EditableText Focus Changed: \(isFocused)")
+				if isFocused {
+					FieldRegistry.shared.activeID = id
 				} else {
-					// Only nil it out if WE were the ones who set it
-					// (Prevents race conditions if focus moves directly to another registered field)
-					if registry.activeID == id { registry.activeID = nil }
+					if FieldRegistry.shared.activeID == id {
+						print("Successfully nilled out the registry!")
+						FieldRegistry.shared.activeID = nil
+					}
 				}
 			}
 			// For custom fields (like your RichEditText swap), a tap gesture ensures the ID is registered.
