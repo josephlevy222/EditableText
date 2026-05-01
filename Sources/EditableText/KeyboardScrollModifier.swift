@@ -41,7 +41,7 @@ struct KeyboardScrollModifier: ViewModifier {
 	}
 }
 extension View {
-	func keyboardAwareScrolling() -> some View {
+	public func keyboardAwareScrolling() -> some View {
 		modifier(KeyboardScrollModifier())
 	}
 }
@@ -75,7 +75,7 @@ struct KeyboardFieldModifier: ViewModifier {
 }
 
 extension View {
-	func registerField() -> some View {
+	public func registerField() -> some View {
 		self.modifier(KeyboardFieldModifier())
 	}
 }
