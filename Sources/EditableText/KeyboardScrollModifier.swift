@@ -18,14 +18,6 @@ struct KeyboardScrollModifier: ViewModifier {
 						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
 						.padding(.bottom, keyboardHeight) // Keep your original padding logic
 				}
-//				.onChange(of: keyboardHeight) { newHeight in
-//					// 4. If the keyboard is up and we have an active ID, scroll to it
-//					if newHeight > 0, let id = registry.activeID {
-//						withAnimation(.easeOut(duration: 0.25)) {
-//							proxy.scrollTo(id, anchor: .center)
-//						}
-//					}
-//				}
 				.onChange(of: keyboardHeight) { newHeight in
 					if newHeight > 0, let id = registry.activeID {
 						// A slightly longer delay helps ensure the swap from Text to
@@ -45,7 +37,7 @@ struct KeyboardScrollModifier: ViewModifier {
 		// Notification listeners
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-				keyboardHeight = frame.cgRectValue.height //+ 60
+				keyboardHeight = frame.cgRectValue.height + 60
 			}
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
@@ -77,12 +69,12 @@ struct KeyboardFieldModifier: ViewModifier {
 			.focused($isFocused) // Syncs with native keyboard focus
 			.id(id)              // Anchors the view for ScrollViewReader
 			.onChange(of: isFocused) { focus in
-				print("EditableText Focus Changed: \(isFocused)")
+				print("\(id) Focus Changed: \(isFocused)")
 				if focus {
 					registry.activeID = id
 				} else {
 					if registry.activeID == id {
-						print("Successfully nilled out the registry!")
+						print("Successfully cleared the registry!")
 						registry.activeID = nil
 					}
 				}

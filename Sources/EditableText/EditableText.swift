@@ -77,14 +77,14 @@ public struct EditableText: View {
 					else {
 						RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
 									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
-						.focused($focus)
-						.onChange(of: focus) { isFocused in
-							if !isFocused && FieldRegistry.shared.activeID == fieldID {
-								FieldRegistry.shared.activeID = nil
-								print("View Lost Focus: Registry cleared.")
-							}
-						}
-						
+						.registerField()
+//						.focused($focus)
+//						.onChange(of: focus) { isFocused in
+//							if !isFocused && FieldRegistry.shared.activeID == fieldID {
+//								FieldRegistry.shared.activeID = nil
+//								print("View Lost Focus: Registry cleared.")
+//							}
+//						}
 						.opacity(focus ? 1 : 0)
 					}
 				}
