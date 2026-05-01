@@ -18,7 +18,6 @@ struct KeyboardScrollModifier: ViewModifier {
 						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
 						.padding(.bottom, keyboardHeight) // Keep your original padding logic
 				}
-				.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 				.onChange(of: keyboardHeight) { newHeight in
 					// 4. If the keyboard is up and we have an active ID, scroll to it
 					if newHeight > 0, let id = registry.activeID {
@@ -27,8 +26,10 @@ struct KeyboardScrollModifier: ViewModifier {
 						}
 					}
 				}
+				
 			}
 		}
+		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 		// Notification listeners
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
@@ -38,6 +39,7 @@ struct KeyboardScrollModifier: ViewModifier {
 		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
 			keyboardHeight = 0
 		}
+	
 	}
 }
 extension View {
