@@ -189,7 +189,7 @@ public struct AccessoryActions {
     func toggleBoldface() { toggleSymbolicTrait(.traitBold) }
     func toggleItalics()  { toggleSymbolicTrait(.traitItalic) }
 
-    private func toggleSymbolicTrait(_ trait: UIFontDescriptor.SymbolicTraits) {
+    func toggleSymbolicTrait(_ trait: UIFontDescriptor.SymbolicTraits) {
         inputClick.play(!toolbar.wrappedValue.sound)
         if selectedRange.isEmpty {
             toolbar.wrappedValue.justChanged = true

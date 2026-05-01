@@ -30,7 +30,9 @@ public struct EditableText: View {
         self.placeholder = placeholder.isEmpty ? " " : placeholder
         self.isPopover = isPopover
     }
-
+	// Access the singleton directly
+	@ObservedObject private var registry = FieldRegistry.shared
+	@State private var fieldID = UUID().uuidString
     // MARK: - Body
     public var body: some View {
 		Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
@@ -38,7 +40,9 @@ public struct EditableText: View {
 			.multilineTextAlignment(alignment)
 			.contentShape(Rectangle())
 			.opacity(focus ? 0 : 1)
+			.id(fieldID) // The anchor
 			.onTapGesture {
+				registry.activeID = fieldID // Mark focus in singleton
 				focus = true
 				if isPopover {
 					#if targetEnvironment(macCatalyst)
