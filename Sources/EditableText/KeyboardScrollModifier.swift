@@ -18,15 +18,27 @@ struct KeyboardScrollModifier: ViewModifier {
 						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
 						.padding(.bottom, keyboardHeight) // Keep your original padding logic
 				}
+//				.onChange(of: keyboardHeight) { newHeight in
+//					// 4. If the keyboard is up and we have an active ID, scroll to it
+//					if newHeight > 0, let id = registry.activeID {
+//						withAnimation(.easeOut(duration: 0.25)) {
+//							proxy.scrollTo(id, anchor: .center)
+//						}
+//					}
+//				}
 				.onChange(of: keyboardHeight) { newHeight in
-					// 4. If the keyboard is up and we have an active ID, scroll to it
 					if newHeight > 0, let id = registry.activeID {
-						withAnimation(.easeOut(duration: 0.25)) {
-							proxy.scrollTo(id, anchor: .center)
+						// A slightly longer delay helps ensure the swap from Text to
+						// RichTextEditor is complete so the ID is attached to the new view.
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+							withAnimation(.easeInOut(duration: 0.3)) {
+								// Using .top is more predictable than .center when
+								// the bottom half of the screen is "invisible."
+								proxy.scrollTo(id, anchor: .top)
+							}
 						}
 					}
 				}
-				
 			}
 		}
 		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
