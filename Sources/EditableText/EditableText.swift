@@ -53,6 +53,7 @@ public struct EditableText: View {
 					#endif
 				}
 			}
+		
 			.overlay {
 				GeometryReader { g in
 					// g.size reflects the idealSize of the Text.  I add 10 to the width in the popover to prevent wrapping

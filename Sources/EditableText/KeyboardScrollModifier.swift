@@ -79,6 +79,10 @@ struct KeyboardFieldModifier: ViewModifier {
 			.onChange(of: isFocused) { focused in
 				if focused {
 					registry.activeID = id
+				} else {
+					// Only nil it out if WE were the ones who set it
+					// (Prevents race conditions if focus moves directly to another registered field)
+					if registry.activeID == id { registry.activeID = nil }
 				}
 			}
 			// For custom fields (like your RichEditText swap), a tap gesture ensures the ID is registered.
