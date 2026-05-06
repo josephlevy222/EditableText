@@ -85,7 +85,7 @@ struct KeyboardScrollModifier: ViewModifier {
 							}
 							.animation(.easeOut, value: 0.16)
 						Color.clear.frame(height: 0).id("bottom")
-							.padding(.bottom, max(0,keyboardHeight-bottomPadding))
+						Color.clear.padding(.bottom, max(0,keyboardHeight-bottomPadding))
 					}
 				}
 				.onChange(of: bottomPadding) { newHeight in
