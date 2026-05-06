@@ -75,6 +75,7 @@ struct KeyboardScrollModifier: ViewModifier {
 					VStack(spacing: 0) {
 						content
 							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
+							.padding(.bottom, self.keyboardHeight)
 							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
 								self.keyboardHeight = keyboardHeight
 								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
@@ -84,14 +85,14 @@ struct KeyboardScrollModifier: ViewModifier {
 							}
 							.animation(.easeOut, value: 0.16)
 						Color.red.frame(height: 1).offset(y: -keyboardHeight+bottomPadding).id("bottom")
-						//Color.clear.padding(.bottom, max(0,keyboardHeight-bottomPadding))
-					}.padding(.bottom, self.keyboardHeight-1)
+							.padding(.bottom, -1)
+					}
 				}
 				.onChange(of: bottomPadding) { newHeight in
 					//if newHeight > 0, let id = registry.activeID {
 						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
 						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-							withAnimation(.easeInOut(duration: 0.3)) {
+							withAnimation(.easeInOut(duration: 5.3)) {
 								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
 								proxy.scrollTo("bottom", anchor: .top)
 							}
