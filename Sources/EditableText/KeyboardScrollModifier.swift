@@ -66,7 +66,7 @@ import SwiftUI
 struct KeyboardScrollModifier: ViewModifier {
 	@State private var keyboardHeight: CGFloat = 0
 	@State private var bottomPadding: CGFloat = 0
-	@ObservedObject var registry = FieldRegistry.shared
+	//@ObservedObject var registry = FieldRegistry.shared
 	
 	func body(content: Content) -> some View {
 		GeometryReader { geometry in
@@ -75,7 +75,6 @@ struct KeyboardScrollModifier: ViewModifier {
 					VStack(spacing: 0) {
 						content
 							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-							
 							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
 								self.keyboardHeight = keyboardHeight
 								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
@@ -101,7 +100,7 @@ struct KeyboardScrollModifier: ViewModifier {
 				}
 			}
 		}
-		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
+		//.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 //		// Notification listeners
 //		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 //			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
