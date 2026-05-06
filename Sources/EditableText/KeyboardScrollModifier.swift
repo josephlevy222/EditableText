@@ -84,7 +84,7 @@ struct KeyboardScrollModifier: ViewModifier {
 								print("kH, kT, fTIB, bP", keyboardHeight, keyboardTop, focusedTextInputBottom, bottomPadding)
 							}
 							.animation(.easeOut, value: 0.16)
-						Color.red.frame(height: 1).offset(y: -bottomPadding-keyboardHeight).id("target")
+						Color.red.frame(height: 1).offset(y: -bottomPadding).id("target")
 							.padding(.bottom, -1)
 					}
 				}
