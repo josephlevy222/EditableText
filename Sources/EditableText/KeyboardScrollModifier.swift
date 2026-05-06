@@ -75,28 +75,26 @@ struct KeyboardScrollModifier: ViewModifier {
 						content
 							.frame(/*minWidth: geometry.size.width, */minHeight: geometry.size.height)
 							.padding(.bottom, self.keyboardHeight)
-							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
-								self.keyboardHeight = keyboardHeight
-								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
-								let focusedTextInputBottom = UIResponder.currentFirstResponder?.globalFrame?.maxY ?? 0
-								bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
-								print("kH, kT, fTIB, bP", keyboardHeight, keyboardTop, focusedTextInputBottom, bottomPadding)
-							}
 							.animation(.easeOut, value: 0.16)
-//						Color.red.frame(height: 1).offset(y: -bottomPadding).id("target")
-//							.padding(.bottom, -1)
-					
 				}
 				.onChange(of: bottomPadding) { newHeight in
 					if newHeight > 0, let id = focusID.activeID {
 						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
 						DispatchQueue.main.async/*After(deadline: .now() + 0.05) */{
-							withAnimation(.easeInOut(duration: 5.3)) {
+							withAnimation(.easeInOut(duration: 0.3)) {
 								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
 								proxy.scrollTo(id, anchor: .top)
 							}
 						}
 					}
+				}
+				.onChange(of: focusID.activeID) { id in }
+				.onReceive(Publishers.keyboardHeight) { keyboardHeight in
+					self.keyboardHeight = keyboardHeight
+					let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
+					let focusedTextInputBottom = UIResponder.currentFirstResponder?.globalFrame?.maxY ?? 0
+					bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
+					print("kH, kT, fTIB, bP", keyboardHeight, keyboardTop, focusedTextInputBottom, bottomPadding)
 				}
 			}
 		}
