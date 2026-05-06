@@ -79,6 +79,7 @@ public struct EditableText: View {
 									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
 						.focused($focus).opacity(focus ? 1 : 0)
 						.onChange(of: focus) { isFocused in
+							if isFocused { FocusCoordinator.shared.activeID = fieldID }
 							if !isFocused && FocusCoordinator.shared.activeID == fieldID {
 								FocusCoordinator.shared.activeID = nil
 								print("View Lost Focus: Registry cleared.")
