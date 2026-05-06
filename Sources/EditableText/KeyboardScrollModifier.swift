@@ -101,7 +101,7 @@ struct KeyboardScrollModifier: ViewModifier {
 				}
 			}
 		}
-		//.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
+		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 //		// Notification listeners
 //		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
 //			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
