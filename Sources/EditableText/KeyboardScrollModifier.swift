@@ -75,7 +75,7 @@ struct KeyboardScrollModifier: ViewModifier {
 					VStack(spacing: 0) {
 						content
 							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-							.padding(.bottom, self.bottomPadding)
+							
 							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
 								self.keyboardHeight = keyboardHeight
 								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
@@ -84,9 +84,9 @@ struct KeyboardScrollModifier: ViewModifier {
 								print("kH, kT, fTIB, bP", keyboardHeight, keyboardTop, focusedTextInputBottom, bottomPadding)
 							}
 							.animation(.easeOut, value: 0.16)
-						Color.clear.frame(height: 0).id("bottom")
-						Color.clear.padding(.bottom, max(0,keyboardHeight-bottomPadding))
-					}
+						Color.clear.frame(height: 0).offset(y: -bottomPadding).id("bottom")
+						//Color.clear.padding(.bottom, max(0,keyboardHeight-bottomPadding))
+					}.padding(.bottom, self.keyboardHeight)
 				}
 				.onChange(of: bottomPadding) { newHeight in
 					//if newHeight > 0, let id = registry.activeID {
@@ -94,7 +94,7 @@ struct KeyboardScrollModifier: ViewModifier {
 						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
-								proxy.scrollTo("bottom", anchor: .bottom)
+								proxy.scrollTo("bottom", anchor: .top)
 							}
 						}
 					//}
