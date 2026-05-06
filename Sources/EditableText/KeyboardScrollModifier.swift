@@ -97,7 +97,7 @@ struct KeyboardScrollModifier: ViewModifier {
 								proxy.scrollTo("target", anchor: .top)
 							}
 						}
-					//}
+					}
 				}
 			}
 		}
