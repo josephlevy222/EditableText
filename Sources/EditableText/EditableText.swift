@@ -31,7 +31,7 @@ public struct EditableText: View {
         self.isPopover = isPopover
     }
 	// Access the singleton directly
-	@ObservedObject private var registry = FieldRegistry.shared
+	@ObservedObject private var focusID = FocusCoordinator.shared
 	@State private var fieldID = UUID().uuidString
     // MARK: - Body
     public var body: some View {
@@ -42,7 +42,7 @@ public struct EditableText: View {
 			.opacity(focus ? 0 : 1)
 			.id(fieldID) // The anchor
 			.onTapGesture {
-				registry.activeID = fieldID // Mark focus in singleton
+				focusID.activeID = fieldID // Mark focus in singleton
 				focus = true
 				if isPopover {
 					#if targetEnvironment(macCatalyst)
@@ -79,8 +79,8 @@ public struct EditableText: View {
 									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
 						.focused($focus).opacity(focus ? 1 : 0)
 						.onChange(of: focus) { isFocused in
-							if !isFocused && FieldRegistry.shared.activeID == fieldID {
-								FieldRegistry.shared.activeID = nil
+							if !isFocused && FocusCoordinator.shared.activeID == fieldID {
+								FocusCoordinator.shared.activeID = nil
 								print("View Lost Focus: Registry cleared.")
 							}
 						}
