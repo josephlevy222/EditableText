@@ -4,46 +4,114 @@
 //
 //  Created by Joseph Levy on 4/30/26.
 //
+//
+//  KeyboardHeightPublisher.swift
+//  KeyboardAvoidanceSwiftUI
+//
+//  Created by Vadim Bulavin on 3/27/20.
+//  Copyright © 2020 Vadim Bulavin. All rights reserved.
+//
+
+import Combine
+import UIKit
+
+extension Publishers {
+	static var keyboardHeight: AnyPublisher<CGFloat, Never> {
+		let willShow = NotificationCenter.default.publisher(for: UIApplication.keyboardWillShowNotification)
+			.map { $0.keyboardHeight }
+		
+		let willHide = NotificationCenter.default.publisher(for: UIApplication.keyboardWillHideNotification)
+			.map { _ in CGFloat(0) }
+		
+		return MergeMany(willShow, willHide)
+			.eraseToAnyPublisher()
+	}
+}
+
+extension Notification {
+	var keyboardHeight: CGFloat {
+		return (userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height ?? 0
+	}
+}
+//
+//  UIResponder+Current.swift
+//  KeyboardAvoidanceSwiftUI
+//
+//  Created by Vadim Bulavin on 3/27/20.
+//  Copyright © 2020 Vadim Bulavin. All rights reserved.
+//
+
+// From https://stackoverflow.com/a/14135456/6870041
+extension UIResponder {
+	static var currentFirstResponder: UIResponder? {
+		_currentFirstResponder = nil
+		UIApplication.shared.sendAction(#selector(UIResponder.findFirstResponder(_:)), to: nil, from: nil, for: nil)
+		return _currentFirstResponder
+	}
+	
+	private static weak var _currentFirstResponder: UIResponder?
+	
+	@objc private func findFirstResponder(_ sender: Any) {
+		UIResponder._currentFirstResponder = self
+	}
+	
+	var globalFrame: CGRect? {
+		guard let view = self as? UIView else { return nil }
+		return view.superview?.convert(view.frame, to: nil)
+	}
+}
+
 import SwiftUI
 
 struct KeyboardScrollModifier: ViewModifier {
 	@State private var keyboardHeight: CGFloat = 0
+	@State private var bottomPadding: CGFloat = 0
 	@ObservedObject var registry = FieldRegistry.shared
 	
 	func body(content: Content) -> some View {
 		GeometryReader { geometry in
 			ScrollViewReader { proxy in
 				ScrollView {
-					content
-						.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-						.padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 20) // Keep your original padding logic
+					VStack(spacing: 0) {
+						content
+							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
+							.padding(.bottom, self.bottomPadding)
+							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
+								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
+								let focusedTextInputBottom = UIResponder.currentFirstResponder?.globalFrame?.maxY ?? 0
+								self.bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
+							}
+							.animation(.easeOut, value: 0.16)
+						Color.clear.frame(height: 0).id("bottom")
+					}
 				}
-				.onChange(of: keyboardHeight) { newHeight in
-					if newHeight > 0, let id = registry.activeID {
+				.onChange(of: bottomPadding) { newHeight in
+					//if newHeight > 0, let id = registry.activeID {
 						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
 						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
 							withAnimation(.easeInOut(duration: 0.3)) {
 								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
-								proxy.scrollTo(id, anchor: .top)
+								proxy.scrollTo("bottom", anchor: .top)
 							}
 						}
-					}
+					//}
 				}
 			}
 		}
 		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
-		// Notification listeners
-		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-				keyboardHeight = frame.cgRectValue.height //+ 60
-			}
-		}
-		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-			keyboardHeight = 0
-		}
+//		// Notification listeners
+//		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+//			if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
+//				keyboardHeight = frame.cgRectValue.height //+ 60
+//			}
+//		}
+//		.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+//			keyboardHeight = 0
+//		}
 	
 	}
 }
+	
 extension View {
 	public func keyboardAwareScrolling() -> some View {
 		modifier(KeyboardScrollModifier())
