@@ -70,33 +70,36 @@ struct KeyboardScrollModifier: ViewModifier {
 	
 	func body(content: Content) -> some View {
 		GeometryReader { geometry in
-//			ScrollViewReader { proxy in
+			ScrollViewReader { proxy in
 				ScrollView {
-					//VStack(spacing: 0) {
+					VStack(spacing: 0) {
 						content
 							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
 							.padding(.bottom, self.bottomPadding)
 							.onReceive(Publishers.keyboardHeight) { keyboardHeight in
+								self.keyboardHeight = keyboardHeight
 								let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
 								let focusedTextInputBottom = UIResponder.currentFirstResponder?.globalFrame?.maxY ?? 0
-								self.bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
+								bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
+								print("kH, kT, fTIB, bP", keyboardHeight, keyboardTop, focusedTextInputBottom, bottomPadding)
 							}
 							.animation(.easeOut, value: 0.16)
-						//Color.clear.frame(height: 0).id("bottom")
+						Color.clear.frame(height: 0).id("bottom")
+							.padding(.bottom, max(0,keyboardHeight-bottomPadding))
+					}
+				}
+				.onChange(of: bottomPadding) { newHeight in
+					//if newHeight > 0, let id = registry.activeID {
+						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+							withAnimation(.easeInOut(duration: 0.3)) {
+								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
+								proxy.scrollTo("bottom", anchor: .bottom)
+							}
+						}
 					//}
 				}
-//				.onChange(of: bottomPadding) { newHeight in
-//					//if newHeight > 0, let id = registry.activeID {
-//						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
-//						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-//							withAnimation(.easeInOut(duration: 0.3)) {
-//								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
-//								proxy.scrollTo("bottom", anchor: .bottom)
-//							}
-//						}
-//					//}
-//				}
-//			}
+			}
 		}
 		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 //		// Notification listeners
