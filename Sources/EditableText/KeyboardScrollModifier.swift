@@ -70,9 +70,9 @@ struct KeyboardScrollModifier: ViewModifier {
 	
 	func body(content: Content) -> some View {
 		GeometryReader { geometry in
-			ScrollViewReader { proxy in
+//			ScrollViewReader { proxy in
 				ScrollView {
-					VStack(spacing: 0) {
+					//VStack(spacing: 0) {
 						content
 							.frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
 							.padding(.bottom, self.bottomPadding)
@@ -82,21 +82,21 @@ struct KeyboardScrollModifier: ViewModifier {
 								self.bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom)
 							}
 							.animation(.easeOut, value: 0.16)
-						Color.clear.frame(height: 0).id("bottom")
-					}
-				}
-				.onChange(of: bottomPadding) { newHeight in
-					//if newHeight > 0, let id = registry.activeID {
-						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
-						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-							withAnimation(.easeInOut(duration: 0.3)) {
-								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
-								proxy.scrollTo("bottom", anchor: .bottom)
-							}
-						}
+						//Color.clear.frame(height: 0).id("bottom")
 					//}
 				}
-			}
+//				.onChange(of: bottomPadding) { newHeight in
+//					//if newHeight > 0, let id = registry.activeID {
+//						/// A slightly longer delay helps ensure the swap from Text to RichTextEditor is complete so the ID is attached to the new view.
+//						DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+//							withAnimation(.easeInOut(duration: 0.3)) {
+//								/// Using .top is more predictable than .center when the bottom half of the screen is "invisible."
+//								proxy.scrollTo("bottom", anchor: .bottom)
+//							}
+//						}
+//					//}
+//				}
+//			}
 		}
 		.ignoresSafeArea(.keyboard) // Keep your existing ignore logic[cite: 1]
 //		// Notification listeners
