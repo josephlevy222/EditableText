@@ -141,11 +141,11 @@ struct KeyboardFieldModifier: ViewModifier {
 			.onChange(of: isFocused) { focus in
 				print("\(id) Focus Changed: \(isFocused)")
 				if focus {
-					focusID.activeID = id
+					//focusID.activeID = id
 				} else {
 					if focusID.activeID == id {
 						print("Successfully cleared the focusID!")
-						focusID.activeID = nil
+						//focusID.activeID = nil
 					}
 				}
 			}
