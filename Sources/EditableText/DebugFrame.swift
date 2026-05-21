@@ -8,9 +8,9 @@
 /*
  DebugFrame is an overlay that can be appended to your view, for debugging its origin and size.
  
- DebugFrame will not be compiled in the release build, so you may not worry if you forget to remove it from some of your view.
- To keep your code as clean as possible, it's probably a good idea to add a SwiftLint or any other linting rule to make an
- Xcode warning for this.
+ DebugFrame will not be compiled in the release build, so you need not worry if you forget to remove it from some of your
+ views.  To keep your code as clean as possible, it's probably a good idea to add a SwiftLint or any other linting rule to 
+ make an Xcode warning for this.
  
  There are two methods for modifying your view with debugFrame overlay.
  Only two methods needed for easier use of the Xcode autocomplete.

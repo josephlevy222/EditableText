@@ -164,7 +164,7 @@ public struct RichTextEditor: UIViewRepresentable {
 		/// Collapses selection first to avoid deleting selected text. Shuts off undo/redo while insert-delete occur.
 		if uiView.isFirstResponder {
 			DispatchQueue.main.async {
-				print("In hack")
+				//print("In hack")
 				let savedRange = uiView.selectedRange
 				uiView.selectedRange = NSRange(location: savedRange.location, length: 0)
 				CATransaction.begin()

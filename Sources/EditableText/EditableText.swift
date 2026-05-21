@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - EditableText (in-place editing)
 public struct EditableText: View {
     @Binding public var text: AttributedString
-    @FocusState private var focus: Bool
+    @FocusState private var focus: Bool // Only used to hide/show editor
     @State private var alignment: TextAlignment
     @State private var toolbar: KeyboardToolbar
     var isPopover:       Bool   = false
@@ -30,9 +30,7 @@ public struct EditableText: View {
         self.placeholder = placeholder.isEmpty ? " " : placeholder
         self.isPopover = isPopover
     }
-	// Access the singleton directly
-	//@ObservedObject private var focusID = FocusCoordinator.shared
-	//@State private var fieldID = UUID().uuidString
+	
     // MARK: - Body
     public var body: some View {
 		Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
@@ -40,9 +38,7 @@ public struct EditableText: View {
 			.multilineTextAlignment(alignment)
 			.contentShape(Rectangle())
 			.opacity(focus ? 0 : 1)
-			//.id(fieldID) // The anchor
 			.onTapGesture {
-				//focusID.activeID = fieldID // Mark focus in singleton
 				focus = true
 				if isPopover {
 					#if targetEnvironment(macCatalyst)
@@ -56,21 +52,14 @@ public struct EditableText: View {
 		
 			.overlay {
 				GeometryReader { g in
-					// g.size reflects the idealSize of the Text.  I add 10 to the width in the popover to prevent wrapping
-					// that is removed quickly on continued typing.  The side effect is there is sometimes no wrapping in the
-					// popover when it is in the Text
+					/// g.size reflects the idealSize of the Text.  I add 10 to the width in the popover to prevent wrapping that is removed quickly
+					/// on continued typing.  The side effect is there is sometimes no wrapping in the  popover when it is in the Text
 					if isPopover {
 						Color.clear.popover(isPresented: $edit) {
 							RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
 										   proposedWidth:  g.size.width+10, proposedHeight: g.size.height)
-							{ $0.becomeFirstResponder()  }
+							{ $0.becomeFirstResponder()  } // avoids user from needing to tap it
 								.padding()
-//                                 #if !targetEnvironment(macCatalyst)
-//								.onReceive(keyboardPublisher) { shows in
-//									keyboardShown = shows
-//									if !shows { edit = false; focus = false }
-//								}
-//                                #endif
 								.focused($focus)
 						}
 					}
@@ -78,17 +67,9 @@ public struct EditableText: View {
 						RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
 									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
 						.focused($focus).opacity(focus ? 1 : 0)
-//						.onChange(of: focus) { isFocused in
-//							if isFocused { FocusCoordinator.shared.activeID = fieldID }
-//							if !isFocused && FocusCoordinator.shared.activeID == fieldID {
-//								FocusCoordinator.shared.activeID = nil
-//								print("View Lost Focus: Registry cleared.")
-//							}
-//						}
-						
 					}
 				}
 			}
-			.trackFocus()
+			.trackFocus() // for ScrollWithKeyboard if used
 	}
 }
