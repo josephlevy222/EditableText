@@ -11,7 +11,7 @@
 //  Created by Vadim Bulavin on 3/27/20.
 //  Copyright © 2020 Vadim Bulavin. All rights reserved.
 //
-
+#if false // don't use
 import Combine
 import UIKit
 
@@ -584,4 +584,5 @@ class TextViewDelegateWrapper: NSObject, UITextViewDelegate {
 	init(onBegin: @escaping () -> Void) { self.onBegin = onBegin }
 	func textViewDidBeginEditing(_ textView: UITextView) { onBegin() }
 }
+#endif
 #endif

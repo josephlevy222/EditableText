@@ -7,7 +7,7 @@
 //
 //  Unified SwiftUI + UIKit field awareness with keyboard-aware scrolling
 //
-
+#if false // don't use
 import SwiftUI
 import Combine
 import UIKit
@@ -311,3 +311,4 @@ struct UIKitFieldAwareContainer<Content: UIViewRepresentable>: View {
 	}
 }
 
+#endif

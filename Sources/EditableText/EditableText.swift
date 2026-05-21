@@ -31,8 +31,8 @@ public struct EditableText: View {
         self.isPopover = isPopover
     }
 	// Access the singleton directly
-	@ObservedObject private var focusID = FocusCoordinator.shared
-	@State private var fieldID = UUID().uuidString
+	//@ObservedObject private var focusID = FocusCoordinator.shared
+	//@State private var fieldID = UUID().uuidString
     // MARK: - Body
     public var body: some View {
 		Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
@@ -40,10 +40,10 @@ public struct EditableText: View {
 			.multilineTextAlignment(alignment)
 			.contentShape(Rectangle())
 			.opacity(focus ? 0 : 1)
-			.id(fieldID) // The anchor
+			//.id(fieldID) // The anchor
 			.onTapGesture {
-				focusID.activeID = fieldID // Mark focus in singleton
-				focus = true
+				//focusID.activeID = fieldID // Mark focus in singleton
+				//focus = true
 				if isPopover {
 					#if targetEnvironment(macCatalyst)
 						edit = true 
@@ -78,16 +78,17 @@ public struct EditableText: View {
 						RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
 									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
 						.focused($focus).opacity(focus ? 1 : 0)
-						.onChange(of: focus) { isFocused in
-							if isFocused { FocusCoordinator.shared.activeID = fieldID }
-							if !isFocused && FocusCoordinator.shared.activeID == fieldID {
-								FocusCoordinator.shared.activeID = nil
-								print("View Lost Focus: Registry cleared.")
-							}
-						}
+//						.onChange(of: focus) { isFocused in
+//							if isFocused { FocusCoordinator.shared.activeID = fieldID }
+//							if !isFocused && FocusCoordinator.shared.activeID == fieldID {
+//								FocusCoordinator.shared.activeID = nil
+//								print("View Lost Focus: Registry cleared.")
+//							}
+//						}
 						
 					}
 				}
 			}
+			.trackFocus()
 	}
 }
