@@ -65,12 +65,12 @@ public struct EditableText: View {
 										   proposedWidth:  g.size.width+10, proposedHeight: g.size.height)
 							{ $0.becomeFirstResponder()  }
 								.padding()
-                                 #if !targetEnvironment(macCatalyst)
-								.onReceive(keyboardPublisher) { shows in
-									keyboardShown = shows
-									if !shows { edit = false; focus = false }
-								}
-                                #endif
+//                                 #if !targetEnvironment(macCatalyst)
+//								.onReceive(keyboardPublisher) { shows in
+//									keyboardShown = shows
+//									if !shows { edit = false; focus = false }
+//								}
+//                                #endif
 								.focused($focus)
 						}
 					}
