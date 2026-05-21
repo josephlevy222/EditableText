@@ -43,7 +43,7 @@ public struct EditableText: View {
 			//.id(fieldID) // The anchor
 			.onTapGesture {
 				//focusID.activeID = fieldID // Mark focus in singleton
-				//focus = true
+				focus = true
 				if isPopover {
 					#if targetEnvironment(macCatalyst)
 						edit = true 
