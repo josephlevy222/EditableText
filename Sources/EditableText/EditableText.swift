@@ -19,6 +19,7 @@ public struct EditableText: View {
     var placeholder:     String = " "
 	@State private var edit = false
 	@State private var keyboardShown = false
+	@Environment(\.notifyFocused) private var notifyFocused
 	
     public init(_ text: Binding<AttributedString>,
 				alignment: TextAlignment = .center,
@@ -33,43 +34,49 @@ public struct EditableText: View {
 	
     // MARK: - Body
     public var body: some View {
-		Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
-			.foregroundStyle(text.characters.isEmpty ? Color(.placeholderText) : Color(.label) )
-			.multilineTextAlignment(alignment)
-			.contentShape(Rectangle())
-			.opacity(focus ? 0 : 1)
-			.onTapGesture {
-				focus = true
-				if isPopover {
-					#if targetEnvironment(macCatalyst)
-						edit = true 
-					#else
+		if let notifyFocused {
+			Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
+				.foregroundStyle(text.characters.isEmpty ? Color(.placeholderText) : Color(.label) )
+				.multilineTextAlignment(alignment)
+				.contentShape(Rectangle())
+				.opacity(focus ? 0 : 1)
+				.onTapGesture {
+					focus = true
+					if isPopover {
+#if targetEnvironment(macCatalyst)
+						edit = true
+#else
 						if keyboardShown {  edit = true }
 						else { DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { edit = true } }
-					#endif
+#endif
+					}
 				}
-			}
-		
-			.overlay {
-				GeometryReader { g in
-					/// g.size reflects the idealSize of the Text.  I add 10 to the width in the popover to prevent wrapping that is removed quickly
-					/// on continued typing.  The side effect is there is sometimes no wrapping in the  popover when it is in the Text
-					if isPopover {
-						Color.clear.popover(isPresented: $edit) {
+			
+				.overlay {
+					GeometryReader { g in
+						/// g.size reflects the idealSize of the Text.  I add 10 to the width in the popover to prevent wrapping that is removed quickly
+						/// on continued typing.  The side effect is there is sometimes no wrapping in the  popover when it is in the Text
+						if isPopover {
+							Color.clear.popover(isPresented: $edit) {
+								RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
+											   proposedWidth:  g.size.width+10, proposedHeight: g.size.height)
+								{ $0.becomeFirstResponder()  } // avoids user from needing to tap it
+									.padding()
+									.focused($focus)
+							}
+						}
+						else {
 							RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
-										   proposedWidth:  g.size.width+10, proposedHeight: g.size.height)
-							{ $0.becomeFirstResponder()  } // avoids user from needing to tap it
-								.padding()
-								.focused($focus)
+										   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
+							.focused($focus).opacity(focus ? 1 : 0)
 						}
 					}
-					else {
-						RichTextEditor(attributedText: $text, alignment: $alignment, isEditing: true, toolbar: $toolbar,
-									   proposedWidth: g.size.width + 1, proposedHeight: g.size.height )
-						.focused($focus).opacity(focus ? 1 : 0)
-					}
 				}
-			}
-			.trackFocus() // for ScrollWithKeyboard if used
+				.trackFocus() // for ScrollWithKeyboard if used
+		} else {
+			Text(text.characters.isEmpty ? AttributedString(placeholder, font: .body) : text)
+				.foregroundStyle(text.characters.isEmpty ? Color(.placeholderText) : Color(.label) )
+				.multilineTextAlignment(alignment)
+		}
 	}
 }
